@@ -12,6 +12,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/golang/lint"
 )
@@ -23,8 +26,17 @@ func main() {
 
 	// TODO(dsymonds): Support linting of stdin.
 	for _, filename := range flag.Args() {
-		lintFile(filename)
+		if isDir(filename) {
+			lintDir(filename)
+		} else {
+			lintFile(filename)
+		}
 	}
+}
+
+func isDir(filename string) bool {
+	fi, err := os.Stat(filename)
+	return err == nil && fi.IsDir()
 }
 
 func lintFile(filename string) {
@@ -45,4 +57,13 @@ func lintFile(filename string) {
 			fmt.Printf("%s:%v: %s\n", filename, p.Position, p.Text)
 		}
 	}
+}
+
+func lintDir(dirname string) {
+	filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() && strings.HasSuffix(path, ".go") {
+			lintFile(path)
+		}
+		return err
+	})
 }
