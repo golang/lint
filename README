@@ -1,5 +1,7 @@
 golint is a linter for Go source code.
 
+Install it with `go get github.com/golang/lint/...`.
+
 Invoke golint with one or more filenames.
 The output of this tool is a list of suggestions in Vim quickfix format,
 which is accepted by lots of different editors.
