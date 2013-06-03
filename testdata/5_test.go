@@ -9,3 +9,6 @@ type H int
 
 func TestSomething(t *testing.T) {
 }
+
+func ExampleBuffer_reader() {
+}

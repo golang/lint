@@ -200,8 +200,6 @@ func (f *file) lintExported() {
 // lintNames examines all names in the file.
 // It complains if any use underscores or incorrect known initialisms.
 func (f *file) lintNames() {
-	// TODO(dsymonds): If in a test, don't ping ExampleFoo_Bar.
-
 	// Package names need slightly different handling than other names.
 	if strings.Contains(f.f.Name.Name, "_") && !strings.HasSuffix(f.f.Name.Name, "_test") {
 		f.errorf(f.f, 1, "don't use an underscore in package name")
@@ -230,6 +228,9 @@ func (f *file) lintNames() {
 				}
 			}
 		case *ast.FuncDecl:
+			if f.isTest() && strings.HasPrefix(v.Name.Name, "Example") {
+				return true
+			}
 			check(v.Name, "func")
 		case *ast.GenDecl:
 			if v.Tok == token.IMPORT {
