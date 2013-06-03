@@ -1,0 +1,25 @@
+golint is a linter for Go source code.
+
+Invoke golint with one or more filenames.
+The output of this tool is a list of suggestions in Vim quickfix format,
+which is accepted by lots of different editors.
+
+The suggestions made by golint are exactly that: suggestions.
+golint is not perfect, and has both false positives and false negatives.
+Do not treat its output as a gold standard. We will not be adding pragmas
+or other knobs to suppress specific warnings, so do not expect or require
+code to be completely "lint-free".
+Unlimited effort will not be expended to make golint perfect.
+It is considered an abuse of this tool to run it for machine consumption.
+
+
+Vim
+---
+Add this to your ~/.vimrc:
+  function! s:GoLint()
+    cexpr system("golint " . shellescape(expand('%')))
+    copen
+  endfunction
+  command! GoLint :call s:GoLint()
+
+Running :GoLint will run golint on the current file and populate the quickfix list.
