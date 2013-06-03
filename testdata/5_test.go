@@ -1,4 +1,4 @@
-// # This file ends in _test.go, so we should not warn about doc comments.
+// This file ends in _test.go, so we should not warn about doc comments.
 // OK
 
 package pkg

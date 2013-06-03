@@ -1,4 +1,4 @@
-// # Test of return+else warning; should not trigger on multi-branch if/else.
+// Test of return+else warning; should not trigger on multi-branch if/else.
 // OK
 
 // Package pkg ...

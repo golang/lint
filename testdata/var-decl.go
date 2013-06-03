@@ -1,4 +1,4 @@
-// # Test for redundant type declaration.
+// Test for redundant type declaration.
 
 // Package foo ...
 package foo

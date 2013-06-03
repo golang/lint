@@ -1,4 +1,4 @@
-// # Test that we don't nag for comments on common methods.
+// Test that we don't nag for comments on common methods.
 // OK
 
 // Package pkg ...

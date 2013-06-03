@@ -1,4 +1,4 @@
-// # Test of block package comment with leading space.
+// Test of block package comment with leading space.
 
 /*
  Package foo is pretty sweet.

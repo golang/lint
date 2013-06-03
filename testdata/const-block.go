@@ -1,4 +1,4 @@
-// # Test for docs in const blocks
+// Test for docs in const blocks
 
 // Package foo ...
 package foo

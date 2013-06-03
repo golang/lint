@@ -1,4 +1,4 @@
-// # Test of block package comment.
+// Test of block package comment.
 // OK
 
 /*

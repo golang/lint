@@ -1,4 +1,4 @@
-// # Test that exported names have correct comments.
+// Test that exported names have correct comments.
 
 // Package pkg does something.
 package pkg

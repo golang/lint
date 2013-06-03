@@ -1,4 +1,4 @@
-// # Test that we don't ask for comments on sort.Interface methods.
+// Test that we don't ask for comments on sort.Interface methods.
 
 // Package pkg ...
 package pkg

@@ -1,4 +1,4 @@
-// # Test that dot imports are flagged.
+// Test that dot imports are flagged.
 
 // Package pkg ...
 package pkg

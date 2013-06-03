@@ -1,4 +1,4 @@
-// # Test of return+else warning.
+// Test of return+else warning.
 
 // Package pkg ...
 package pkg
