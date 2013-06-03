@@ -23,7 +23,6 @@ If you find an established style that is frequently violated, and which
 you think golint could statically check, file an issue at
   https://github.com/golang/lint/issues
 
-
 Vim
 ---
 Add this to your ~/.vimrc:
