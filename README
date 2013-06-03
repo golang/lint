@@ -1,6 +1,9 @@
 golint is a linter for Go source code.
 
-Invoke golint with one or more filenames.
+To install, run
+  go get github.com/golang/lint/golint
+
+Invoke golint with one or more filenames or directories.
 The output of this tool is a list of suggestions in Vim quickfix format,
 which is accepted by lots of different editors.
 
@@ -19,7 +22,6 @@ It is considered an abuse of this tool to run it for machine consumption.
 If you find an established style that is frequently violated, and which
 you think golint could statically check, file an issue at
   https://github.com/golang/lint/issues
-
 
 Vim
 ---
