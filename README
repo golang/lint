@@ -1,4 +1,4 @@
-golint is a linter for Go source code.
+Golint is a linter for Go source code.
 
 To install, run
   go get github.com/golang/lint/golint
@@ -7,17 +7,17 @@ Invoke golint with one or more filenames or directories.
 The output of this tool is a list of suggestions in Vim quickfix format,
 which is accepted by lots of different editors.
 
-golint differs from govet. govet is concerned with correctness, whereas
-golint is concerned with coding style. golint is in use at Google, and it
+Golint differs from govet. Govet is concerned with correctness, whereas
+golint is concerned with coding style. Golint is in use at Google, and it
 seeks to match the accepted style of the open source Go project.
 
 The suggestions made by golint are exactly that: suggestions.
-golint is not perfect, and has both false positives and false negatives.
+Golint is not perfect, and has both false positives and false negatives.
 Do not treat its output as a gold standard. We will not be adding pragmas
 or other knobs to suppress specific warnings, so do not expect or require
 code to be completely "lint-free".
-Unlimited effort will not be expended to make golint perfect.
-It is considered an abuse of this tool to run it for machine consumption.
+In short, this tool is not, and will never be, trustworthy enough for its
+suggestions to be enforced automatically, for example as part of a build process.
 
 If you find an established style that is frequently violated, and which
 you think golint could statically check, file an issue at
