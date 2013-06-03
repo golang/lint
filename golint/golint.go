@@ -30,14 +30,14 @@ func main() {
 func lintFile(filename string) {
 	src, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Printf("Failed reading file: %v", err)
+		log.Printf("Failed reading %v: %v", filename, err)
 		return
 	}
 
 	l := new(lint.Linter)
 	ps, err := l.Lint(filename, src)
 	if err != nil {
-		log.Printf("Failed parsing file: %v", err)
+		log.Printf("Failed parsing %v: %v", filename, err)
 		return
 	}
 	for _, p := range ps {
