@@ -339,6 +339,7 @@ var commonInitialisms = map[string]bool{
 	"IP":    true,
 	"JSON":  true,
 	"URL":   true,
+	"XML":   true,
 }
 
 // lintTypeDoc examines the doc comment on a type.
