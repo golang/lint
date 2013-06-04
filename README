@@ -24,10 +24,6 @@ you think golint could statically check, file an issue at
 Vim
 ---
 Add this to your ~/.vimrc:
-  function! s:GoLint()
-    cexpr system("golint " . shellescape(expand('%')))
-    copen
-  endfunction
-  command! GoLint :call s:GoLint()
+  exe "set rtp+=" . globpath($GOPATH, "src/github.com/golang/lint/misc/vim")
 
-Running :GoLint will run golint on the current file and populate the quickfix list.
+Running :Lint will run golint on the current file and populate the quickfix list.
