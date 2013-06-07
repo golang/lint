@@ -30,3 +30,6 @@ Add this to your ~/.vimrc:
   exe "set rtp+=" . globpath($GOPATH, "src/github.com/golang/lint/misc/vim")
 
 Running :Lint will run golint on the current file and populate the quickfix list.
+
+Optionally, add this to your ~/.vimrc to automatically run golint on :w
+  autocmd BufWritePost,FileWritePost *.go execute 'Lint' | cwindow
