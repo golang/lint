@@ -17,3 +17,12 @@ func f_it() { // MATCH /underscore.*func.*f_it/
 
 	x := foo_proto.Blah{} // should be okay
 }
+
+// Common styles in other languages that don't belong in Go.
+const (
+	CPP_CONST   = 1 // MATCH /ALL_CAPS.*CamelCase/
+	kLeadingKay = 2 // MATCH /k.*leadingKay/
+
+	HTML  = 3 // okay; no underscore
+	X509B = 4 // ditto
+)
