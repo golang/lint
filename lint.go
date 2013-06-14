@@ -354,6 +354,7 @@ var commonInitialisms = map[string]bool{
 	"ID":    true,
 	"IP":    true,
 	"JSON":  true,
+	"RPC":   true,
 	"URL":   true,
 	"XML":   true,
 }
