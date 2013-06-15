@@ -242,7 +242,7 @@ func (f *file) lintNames() {
 				}
 			}
 		case *ast.FuncDecl:
-			if f.isTest() && strings.HasPrefix(v.Name.Name, "Example") {
+			if f.isTest() && (strings.HasPrefix(v.Name.Name, "Example") || strings.HasPrefix(v.Name.Name, "Test")) {
 				return true
 			}
 			check(v.Name, "func")
