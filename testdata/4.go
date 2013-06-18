@@ -3,9 +3,9 @@
 // Package pkg does something.
 package pkg
 
-type T int // MATCH /exported type T.*should.*comment/
+type T int // MATCH /exported type T.*should.*comment.*or.*unexport/
 
-func (T) F() {} // MATCH /exported method T\.F.*should.*comment/
+func (T) F() {} // MATCH /exported method T\.F.*should.*comment.*or.*unexport/
 
 // this is a nice type.
 // MATCH /comment.*exported type U.*should.*form.*"U ..."/
@@ -20,10 +20,10 @@ type V string
 
 // V.H has a pointer receiver
 
-func (*V) H() {} // MATCH /exported method V\.H.*should.*comment/
+func (*V) H() {} // MATCH /exported method V\.H.*should.*comment.*or.*unexport/
 
-var W = "foo" // MATCH /exported var W.*should.*comment/
+var W = "foo" // MATCH /exported var W.*should.*comment.*or.*unexport/
 
-const X = "bar" // MATCH /exported const X.*should.*comment/
+const X = "bar" // MATCH /exported const X.*should.*comment.*or.*unexport/
 
 var Y, Z int // MATCH /exported var Y.*own declaration/

@@ -367,7 +367,7 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 		return
 	}
 	if doc == nil {
-		f.errorf(t, 1, "exported type %v should have comment", t.Name)
+		f.errorf(t, 1, "exported type %v should have comment or be unexported", t.Name)
 		return
 	}
 
@@ -422,7 +422,7 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 		name = recv + "." + name
 	}
 	if fn.Doc == nil {
-		f.errorf(fn, 1, "exported %s %s should have comment", kind, name)
+		f.errorf(fn, 1, "exported %s %s should have comment or be unexported", kind, name)
 		return
 	}
 	s := fn.Doc.Text()
@@ -459,7 +459,7 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 
 	if vs.Doc == nil {
 		if gd.Doc == nil && !genDeclMissingComments[gd] {
-			f.errorf(vs, 1, "exported %s %s should have comment", kind, name)
+			f.errorf(vs, 1, "exported %s %s should have comment or be unexported", kind, name)
 			genDeclMissingComments[gd] = true
 		}
 		return
