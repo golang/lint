@@ -533,10 +533,8 @@ func (f *file) lintVarDecls() {
 				return false
 			}
 			// If the RHS is an int literal, only warn if the LHS type is "int".
-			if lit, ok := rhs.(*ast.BasicLit); ok && lit.Kind == token.INT {
-				if !isIdent(v.Type, "int") {
-					return false
-				}
+			if isIntLiteral(rhs) && !isIdent(v.Type, "int") {
+				return false
 			}
 			f.errorf(v.Type, 0.8, "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
 			return false
@@ -601,6 +599,14 @@ func (f *file) render(x interface{}) string {
 	return buf.String()
 }
 
+func (f *file) debugRender(x interface{}) string {
+	var buf bytes.Buffer
+	if err := ast.Fprint(&buf, f.fset, x, nil); err != nil {
+		panic(err)
+	}
+	return buf.String()
+}
+
 // walker adapts a function to satisfy the ast.Visitor interface.
 // The function return whether the walk should proceed into the node's children.
 type walker func(ast.Node) bool
@@ -615,6 +621,30 @@ func (w walker) Visit(node ast.Node) ast.Visitor {
 func isIdent(expr ast.Expr, ident string) bool {
 	id, ok := expr.(*ast.Ident)
 	return ok && id.Name == ident
+}
+
+func isIntLiteral(expr ast.Expr) bool {
+	// Either a BasicLit with Kind token.INT,
+	// or some combination of a UnaryExpr with Op token.SUB (for "-<lit>")
+	// or a ParenExpr (for "(<lit>)").
+Loop:
+	for {
+		switch v := expr.(type) {
+		case *ast.UnaryExpr:
+			if v.Op == token.SUB {
+				expr = v.X
+				continue Loop
+			}
+		case *ast.ParenExpr:
+			expr = v.X
+			continue Loop
+		case *ast.BasicLit:
+			if v.Kind == token.INT {
+				return true
+			}
+		}
+		return false
+	}
 }
 
 // srcLine returns the complete line at p, including the terminating newline.

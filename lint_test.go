@@ -8,6 +8,7 @@ package lint
 
 import (
 	"bytes"
+	"flag"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -18,8 +19,14 @@ import (
 	"testing"
 )
 
+var lintMatch = flag.String("lint.match", "", "restrict testdata matches to this pattern")
+
 func TestAll(t *testing.T) {
 	l := new(Linter)
+	rx, err := regexp.Compile(*lintMatch)
+	if err != nil {
+		t.Fatalf("Bad -lint.match value %q: %v", *lintMatch, err)
+	}
 
 	baseDir := "testdata"
 	fis, err := ioutil.ReadDir(baseDir)
@@ -30,6 +37,9 @@ func TestAll(t *testing.T) {
 		t.Fatalf("no files in %v", baseDir)
 	}
 	for _, fi := range fis {
+		if !rx.MatchString(fi.Name()) {
+			continue
+		}
 		//t.Logf("Testing %s", fi.Name())
 		src, err := ioutil.ReadFile(path.Join(baseDir, fi.Name()))
 		if err != nil {

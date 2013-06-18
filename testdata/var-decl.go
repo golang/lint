@@ -30,6 +30,9 @@ const x uint64 = 7
 
 // No warnings because the RHS is an ideal int, and the LHS is a different int type.
 var userID int64 = 1235
+var negID int64 = -1
+var parenID int64 = (17)
+var crazyID int64 = -(-(-(-9)))
 
 // No warning because the LHS names an interface type.
 var data interface{} = googleIPs
