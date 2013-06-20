@@ -69,6 +69,7 @@ func (f *file) lint() []Problem {
 	f.lintNames()
 	f.lintVarDecls()
 	f.lintElses()
+	f.lintRanges()
 
 	return f.problems
 }
@@ -573,6 +574,28 @@ func (f *file) lintElses() {
 		if _, ok := lastStmt.(*ast.ReturnStmt); ok {
 			f.errorf(ifStmt.Else, 1, "if block ends with a return statement, so drop this else and outdent its block")
 		}
+		return true
+	})
+}
+
+// lintRanges examines range clauses. It complains about redundant constructions.
+func (f *file) lintRanges() {
+	f.walk(func(node ast.Node) bool {
+		rs, ok := node.(*ast.RangeStmt)
+		if !ok {
+			return true
+		}
+		if rs.Value == nil {
+			// for x = range m { ... }
+			return true // single var form
+		}
+		if !isIdent(rs.Value, "_") {
+			// for ?, y = range m { ... }
+			return true
+		}
+
+		f.errorf(rs.Value, 1, "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
+
 		return true
 	})
 }
