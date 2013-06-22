@@ -7,6 +7,9 @@ Invoke golint with one or more filenames or directories.
 The output of this tool is a list of suggestions in Vim quickfix format,
 which is accepted by lots of different editors.
 
+Golint differs from gofmt. Gofmt reformats Go source code, whereas
+golint prints out style mistakes.
+
 Golint differs from govet. Govet is concerned with correctness, whereas
 golint is concerned with coding style. Golint is in use at Google, and it
 seeks to match the accepted style of the open source Go project.
