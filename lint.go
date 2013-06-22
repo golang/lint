@@ -65,6 +65,7 @@ func (f *file) lint() []Problem {
 
 	f.lintPackageComment()
 	f.lintImports()
+	f.lintBlankImports()
 	f.lintExported()
 	f.lintNames()
 	f.lintVarDecls()
@@ -138,6 +139,37 @@ func (f *file) lintPackageComment() {
 	// Only non-main packages need to keep to this form.
 	if f.f.Name.Name != "main" && !strings.HasPrefix(s, prefix) {
 		f.errorf(f.f.Doc, 1, `package comment should be of the form "%s..."`, prefix)
+	}
+}
+
+// lintBlankImports complains if a non-main package has blank imports that are
+// not documented.
+func (f *file) lintBlankImports() {
+	// In package main and in tests, we don't complain about blank imports.
+	if f.f.Name.Name == "main" || f.isTest() {
+		return
+	}
+
+	// The first element of each contiguous group of blank imports should have
+	// an explanatory comment of some kind.
+	for i, imp := range f.f.Imports {
+		pos := f.fset.Position(imp.Pos())
+
+		if !isBlank(imp.Name) {
+			continue // Ignore non-blank imports.
+		}
+		if i > 0 {
+			prev := f.f.Imports[i-1]
+			prevPos := f.fset.Position(prev.Pos())
+			if isBlank(prev.Name) && prevPos.Line+1 == pos.Line {
+				continue // A subsequent blank in a group.
+			}
+		}
+
+		// This is the first blank import of a group.
+		if imp.Doc == nil && imp.Comment == nil {
+			f.errorf(imp, 1, "blank imports in libraries should have a comment")
+		}
 	}
 }
 
@@ -665,6 +697,10 @@ func isIdent(expr ast.Expr, ident string) bool {
 	id, ok := expr.(*ast.Ident)
 	return ok && id.Name == ident
 }
+
+// isBlank returns whether id is the blank identifier "_".
+// If id == nil, the answer is false.
+func isBlank(id *ast.Ident) bool { return id != nil && id.Name == "_" }
 
 func isPkgDot(expr ast.Expr, pkg, name string) bool {
 	sel, ok := expr.(*ast.SelectorExpr)
