@@ -70,6 +70,7 @@ func (f *file) lint() []Problem {
 	f.lintVarDecls()
 	f.lintElses()
 	f.lintRanges()
+	f.lintErrorf()
 
 	return f.problems
 }
@@ -595,7 +596,26 @@ func (f *file) lintRanges() {
 		}
 
 		f.errorf(rs.Value, 1, "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
+		return true
+	})
+}
 
+// lintErrorf examines errors.New calls. It complains if its only argument is an fmt.Sprintf invocation.
+func (f *file) lintErrorf() {
+	f.walk(func(node ast.Node) bool {
+		ce, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		if !isPkgDot(ce.Fun, "errors", "New") || len(ce.Args) != 1 {
+			return true
+		}
+		arg := ce.Args[0]
+		ce, ok = arg.(*ast.CallExpr)
+		if !ok || !isPkgDot(ce.Fun, "fmt", "Sprintf") {
+			return true
+		}
+		f.errorf(node, 1, "should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)")
 		return true
 	})
 }
@@ -644,6 +664,11 @@ func (w walker) Visit(node ast.Node) ast.Visitor {
 func isIdent(expr ast.Expr, ident string) bool {
 	id, ok := expr.(*ast.Ident)
 	return ok && id.Name == ident
+}
+
+func isPkgDot(expr ast.Expr, pkg, name string) bool {
+	sel, ok := expr.(*ast.SelectorExpr)
+	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
 }
 
 func isIntLiteral(expr ast.Expr) bool {
