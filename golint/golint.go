@@ -59,9 +59,20 @@ func lintFile(filename string) {
 	}
 }
 
+var commonGeneratedFileExts = []string{
+	".l.go",  // golex
+	".pb.go", // protoc
+	".y.go",  // go tool yacc
+}
+
 func lintDir(dirname string) {
 	filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() && strings.HasSuffix(path, ".go") {
+			for _, ext := range commonGeneratedFileExts {
+				if strings.HasSuffix(path, ext) {
+					return nil
+				}
+			}
 			lintFile(path)
 		}
 		return err
