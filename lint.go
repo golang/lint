@@ -476,8 +476,8 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	}
 
 	if len(vs.Names) > 1 {
-		// Check that none are exported.
-		for _, n := range vs.Names {
+		// Check that none are exported except for the first.
+		for _, n := range vs.Names[1:] {
 			if ast.IsExported(n.Name) {
 				f.errorf(vs, 1, "exported %s %s should have its own declaration", kind, n.Name)
 				return
