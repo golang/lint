@@ -493,7 +493,11 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 
 	if vs.Doc == nil {
 		if gd.Doc == nil && !genDeclMissingComments[gd] {
-			f.errorf(vs, 1, "exported %s %s should have comment or be unexported", kind, name)
+			block := ""
+			if kind == "const" && gd.Lparen.IsValid() {
+				block = " (or a comment on this block)"
+			}
+			f.errorf(vs, 1, "exported %s %s should have comment%s or be unexported", kind, name, block)
 			genDeclMissingComments[gd] = true
 		}
 		return
