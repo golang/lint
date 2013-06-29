@@ -26,3 +26,8 @@ const (
 	HTML  = 3 // okay; no underscore
 	X509B = 4 // ditto
 )
+
+func f(bad_name int)                    {} // MATCH /underscore.*func parameter.*bad_name/
+func g() (no_way int)                   {} // MATCH /underscore.*func result.*no_way/
+func (t *t_wow) f(more_under string)    {} // MATCH /underscore.*method parameter.*more_under/
+func (t *t_wow) g() (still_more string) {} // MATCH /underscore.*method result.*still_more/

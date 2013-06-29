@@ -280,6 +280,23 @@ func (f *file) lintNames() {
 				return true
 			}
 			check(v.Name, "func")
+
+			checkList := func(fl *ast.FieldList, thing string) {
+				if fl == nil {
+					return
+				}
+				for _, f := range fl.List {
+					for _, id := range f.Names {
+						check(id, thing)
+					}
+				}
+			}
+			thing := "func"
+			if v.Recv != nil {
+				thing = "method"
+			}
+			checkList(v.Type.Params, thing+" parameter")
+			checkList(v.Type.Results, thing+" result")
 		case *ast.GenDecl:
 			if v.Tok == token.IMPORT {
 				return true
