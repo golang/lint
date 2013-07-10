@@ -14,6 +14,9 @@ const fooId = "blah" // MATCH /fooId.*fooID/
 
 func f_it() { // MATCH /underscore.*func.*f_it/
 	more_underscore := 4 // MATCH /underscore.*var.*more_underscore/
+	if true {
+		more_underscore = 7 // should be okay
+	}
 
 	x := foo_proto.Blah{} // should be okay
 }

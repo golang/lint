@@ -270,6 +270,9 @@ func (f *file) lintNames() {
 	f.walk(func(node ast.Node) bool {
 		switch v := node.(type) {
 		case *ast.AssignStmt:
+			if v.Tok == token.ASSIGN {
+				return true
+			}
 			for _, exp := range v.Lhs {
 				if id, ok := exp.(*ast.Ident); ok {
 					check(id, "var")
