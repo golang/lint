@@ -34,3 +34,7 @@ func f(bad_name int)                    {} // MATCH /underscore.*func parameter.
 func g() (no_way int)                   {} // MATCH /underscore.*func result.*no_way/
 func (t *t_wow) f(more_under string)    {} // MATCH /underscore.*method parameter.*more_under/
 func (t *t_wow) g() (still_more string) {} // MATCH /underscore.*method result.*still_more/
+
+type i interface {
+	CheckHtmlPath() string // MATCH /interface method.*CheckHtmlPath.*CheckHTMLPath/
+}

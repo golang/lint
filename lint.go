@@ -323,6 +323,12 @@ func (f *file) lintNames() {
 					}
 				}
 			}
+		case *ast.InterfaceType:
+			for _, f := range v.Methods.List {
+				for _, id := range f.Names {
+					check(id, "interface method")
+				}
+			}
 		case *ast.StructType:
 			for _, f := range v.Fields.List {
 				for _, id := range f.Names {
