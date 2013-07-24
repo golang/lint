@@ -329,6 +329,16 @@ func (f *file) lintNames() {
 					check(id, "interface method")
 				}
 			}
+		case *ast.RangeStmt:
+			if v.Tok == token.ASSIGN {
+				return true
+			}
+			if id, ok := v.Key.(*ast.Ident); ok {
+				check(id, "range var")
+			}
+			if id, ok := v.Value.(*ast.Ident); ok {
+				check(id, "range var")
+			}
 		case *ast.StructType:
 			for _, f := range v.Fields.List {
 				for _, id := range f.Names {

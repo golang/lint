@@ -13,12 +13,24 @@ type t_wow struct { // MATCH /underscore.*type.*t_wow/
 const fooId = "blah" // MATCH /fooId.*fooID/
 
 func f_it() { // MATCH /underscore.*func.*f_it/
-	more_underscore := 4 // MATCH /underscore.*var.*more_underscore/
-	if true {
+	more_underscore := 4                 // MATCH /underscore.*var.*more_underscore/
+	if isEof := (err == io.EOF); isEof { // MATCH /var.*isEof.*isEOF/
 		more_underscore = 7 // should be okay
 	}
 
 	x := foo_proto.Blah{} // should be okay
+
+	for _, theIp := range ips { // MATCH /range var.*theIp.*theIP/
+	}
+
+	switch myJson := g(); { // MATCH /var.*myJson.*myJSON/
+	}
+	switch tApi := x.(type) { // MATCH /var.*tApi.*tAPI/
+	}
+
+	select {
+	case qId := <-c: // MATCH /var.*qId.*qID/
+	}
 }
 
 // Common styles in other languages that don't belong in Go.
