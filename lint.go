@@ -104,7 +104,7 @@ func (f *file) scanSortable() {
 			return true
 		}
 		// TODO(dsymonds): We could check the signature to be more precise.
-		recv := receiverName(fn)
+		recv := receiverType(fn)
 		if i, ok := nmap[fn.Name.Name]; ok {
 			has[recv] |= i
 		}
@@ -477,7 +477,7 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 	if fn.Recv != nil {
 		// method
 		kind = "method"
-		recv := receiverName(fn)
+		recv := receiverType(fn)
 		if !ast.IsExported(recv) {
 			// receiver is unexported
 			return
@@ -700,23 +700,35 @@ var badReceiverNames = map[string]bool{
 	"self": true,
 }
 
-// lintReceiverNames examines receiver names. It complains about names such as "this".
+// lintReceiverNames examines receiver names. It complains about inconsistent
+// names used for the same type and names such as "this".
 func (f *file) lintReceiverNames() {
+	typeReceiver := map[string]string{}
 	f.walk(func(n ast.Node) bool {
 		fn, ok := n.(*ast.FuncDecl)
 		if !ok || fn.Recv == nil {
 			return true
 		}
 		names := fn.Recv.List[0].Names
-		if len(names) < 1 || !badReceiverNames[names[0].Name] {
+		if len(names) < 1 {
 			return true
 		}
-		f.errorf(n, 1, `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
+		name := names[0].Name
+		if badReceiverNames[name] {
+			f.errorf(n, 1, `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
+			return true
+		}
+		recv := receiverType(fn)
+		if prev, ok := typeReceiver[recv]; ok && prev != name {
+			f.errorf(n, 1, "receiver name %s should be consistent with previous receiver name %s for %s", name, prev, recv)
+			return true
+		}
+		typeReceiver[recv] = name
 		return true
 	})
 }
 
-func receiverName(fn *ast.FuncDecl) string {
+func receiverType(fn *ast.FuncDecl) string {
 	switch e := fn.Recv.List[0].Type.(type) {
 	case *ast.Ident:
 		return e.Name
