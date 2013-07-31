@@ -72,6 +72,7 @@ func (f *file) lint() []Problem {
 	f.lintElses()
 	f.lintRanges()
 	f.lintErrorf()
+	f.lintReceiverNames()
 
 	return f.problems
 }
@@ -688,6 +689,28 @@ func (f *file) lintErrorf() {
 			return true
 		}
 		f.errorf(node, 1, "should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)")
+		return true
+	})
+}
+
+var badReceiverNames = map[string]bool{
+	"me":   true,
+	"this": true,
+	"self": true,
+}
+
+// lintReceiverNames examines receiver names. It complains about names such as "this".
+func (f *file) lintReceiverNames() {
+	f.walk(func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || fn.Recv == nil {
+			return true
+		}
+		names := fn.Recv.List[0].Names
+		if len(names) < 1 || !badReceiverNames[names[0].Name] {
+			return true
+		}
+		f.errorf(n, 1, `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
 		return true
 	})
 }
