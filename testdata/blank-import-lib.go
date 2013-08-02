@@ -6,13 +6,13 @@ package foo
 // The instructions need to go before the imports below so they will not be
 // mistaken for documentation.
 
-/* MATCH /blank imports/ */ import _ "encoding/json"
+/* MATCH /blank import/ */ import _ "encoding/json"
 
 import (
 	"fmt"
-	/* MATCH /blank imports/ */ _ "os"
+	/* MATCH /blank import/ */ _ "os"
 
-	/* MATCH /blank imports/ */ _ "net/http"
+	/* MATCH /blank import/ */ _ "net/http"
 	_ "path"
 )
 
@@ -23,7 +23,7 @@ import (
 	_ "compress/zlib"
 	_ "syscall"
 
-	/* MATCH /blank imports/ */ _ "path/filepath"
+	/* MATCH /blank import/ */ _ "path/filepath"
 )
 
 import (

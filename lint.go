@@ -169,7 +169,7 @@ func (f *file) lintBlankImports() {
 
 		// This is the first blank import of a group.
 		if imp.Doc == nil && imp.Comment == nil {
-			f.errorf(imp, 1, "blank imports in libraries should have a comment")
+			f.errorf(imp, 1, "a blank import should be only in a main or test package, or have a comment justifying it")
 		}
 	}
 }
