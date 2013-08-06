@@ -72,6 +72,7 @@ func (f *file) lint() []Problem {
 	f.lintElses()
 	f.lintRanges()
 	f.lintErrorf()
+	f.lintErrors()
 	f.lintReceiverNames()
 
 	return f.problems
@@ -692,6 +693,38 @@ func (f *file) lintErrorf() {
 		f.errorf(node, 1, "should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)")
 		return true
 	})
+}
+
+// lintErrors examines global error vars. It complains if they aren't named in the standard way.
+func (f *file) lintErrors() {
+	for _, decl := range f.f.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.VAR {
+			continue
+		}
+		for _, spec := range gd.Specs {
+			spec := spec.(*ast.ValueSpec)
+			if len(spec.Names) != 1 || len(spec.Values) != 1 {
+				continue
+			}
+			ce, ok := spec.Values[0].(*ast.CallExpr)
+			if !ok {
+				continue
+			}
+			if !isPkgDot(ce.Fun, "errors", "New") && !isPkgDot(ce.Fun, "fmt", "Errorf") {
+				continue
+			}
+
+			id := spec.Names[0]
+			prefix := "err"
+			if id.IsExported() {
+				prefix = "Err"
+			}
+			if !strings.HasPrefix(id.Name, prefix) {
+				f.errorf(id, 0.9, "error var %s should have name of the form %sFoo", id.Name, prefix)
+			}
+		}
+	}
 }
 
 var badReceiverNames = map[string]bool{
