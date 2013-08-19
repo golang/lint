@@ -15,8 +15,10 @@ import (
 	"go/printer"
 	"go/token"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // A Linter lints Go source code.
@@ -73,6 +75,7 @@ func (f *file) lint() []Problem {
 	f.lintRanges()
 	f.lintErrorf()
 	f.lintErrors()
+	f.lintErrorStrings()
 	f.lintReceiverNames()
 
 	return f.problems
@@ -725,6 +728,47 @@ func (f *file) lintErrors() {
 			}
 		}
 	}
+}
+
+// lintErrorStrings examines error strings. It complains if they are capitalized or end in punctuation.
+func (f *file) lintErrorStrings() {
+	f.walk(func(node ast.Node) bool {
+		ce, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		if !isPkgDot(ce.Fun, "errors", "New") && !isPkgDot(ce.Fun, "fmt", "Errorf") {
+			return true
+		}
+		if len(ce.Args) < 1 {
+			return true
+		}
+		str, ok := ce.Args[0].(*ast.BasicLit)
+		if !ok || str.Kind != token.STRING {
+			return true
+		}
+		s, _ := strconv.Unquote(str.Value) // can assume well-formed Go
+		if s == "" {
+			return true
+		}
+		first, _ := utf8.DecodeRuneInString(s)
+		last, _ := utf8.DecodeLastRuneInString(s)
+		isCap := unicode.IsUpper(first)
+		isPunct := last == '.' || last == ':' || last == '!'
+		var msg string
+		switch {
+		case isCap && isPunct:
+			msg = "error strings should not be capitalized and should not end with punctuation"
+		case isCap:
+			msg = "error strings should not be capitalized"
+		case isPunct:
+			msg = "error strings should not end with punctuation"
+		default:
+			return true
+		}
+		f.errorf(str, 0.8, msg)
+		return true
+	})
 }
 
 var badReceiverNames = map[string]bool{

@@ -20,5 +20,14 @@ var (
 )
 
 func f() {
-	var whatever = errors.New("...") // ok
+	var whatever = errors.New("ok") // ok
+}
+
+// Check for the error strings themselves.
+
+func g(x int) error {
+	if x < 1 {
+		return fmt.Errorf("This %d is too low", x) // MATCH /error strings.*not be capitalized/
+	}
+	return errors.New(`too much stuff.`) // MATCH /error strings.*not end with punctuation/
 }
