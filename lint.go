@@ -421,8 +421,8 @@ func lintName(name string) (should string) {
 // Only add entries that are highly unlikely to be non-initialisms.
 // For instance, "ID" is fine (Freudian code is rare), but "AND" is not.
 var commonInitialisms = map[string]bool{
-	"ASCII": true,
 	"API":   true,
+	"ASCII": true,
 	"EOF":   true,
 	"HTML":  true,
 	"HTTP":  true,
@@ -432,6 +432,7 @@ var commonInitialisms = map[string]bool{
 	"RPC":   true,
 	"UID":   true,
 	"URL":   true,
+	"UTF8":  true,
 	"XML":   true,
 }
 
