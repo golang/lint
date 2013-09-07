@@ -45,3 +45,15 @@ Running :Lint will run golint on the current file and populate the quickfix list
 
 Optionally, add this to your ~/.vimrc to automatically run golint on :w
   autocmd BufWritePost,FileWritePost *.go execute 'Lint' | cwindow
+
+
+Emacs
+-----
+Add this to your .emacs file:
+  (add-to-list 'load-path (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs"))
+  (require 'golint)
+If you have multiple entries in your GOPATH, replace $GOPATH with the right value.
+
+Running M-x golint will run golint on the current file.
+For more usage, see Compilation-Mode:
+  http://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation-Mode.html
