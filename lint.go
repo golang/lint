@@ -423,6 +423,7 @@ func lintName(name string) (should string) {
 var commonInitialisms = map[string]bool{
 	"API":   true,
 	"ASCII": true,
+	"DNS":   true,
 	"EOF":   true,
 	"HTML":  true,
 	"HTTP":  true,
@@ -430,6 +431,7 @@ var commonInitialisms = map[string]bool{
 	"IP":    true,
 	"JSON":  true,
 	"RPC":   true,
+	"UI":    true,
 	"UID":   true,
 	"URL":   true,
 	"UTF8":  true,
