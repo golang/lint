@@ -186,6 +186,7 @@ func TestLintName(t *testing.T) {
 		{"a_b", "aB"},
 		{"a__b", "aB"},
 		{"a___b", "aB"},
+		{"Rpc1150", "RPC1150"},
 	}
 	for _, test := range tests {
 		got := lintName(test.name)

@@ -389,8 +389,8 @@ func lintName(name string) (should string) {
 			}
 			copy(runes[i+1:], runes[i+n+1:])
 			runes = runes[:len(runes)-n]
-		} else if unicode.IsLower(runes[i]) && unicode.IsUpper(runes[i+1]) {
-			// lower->upper
+		} else if unicode.IsLower(runes[i]) && !unicode.IsLower(runes[i+1]) {
+			// lower->non-lower
 			eow = true
 		}
 		i++
