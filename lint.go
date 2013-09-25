@@ -739,6 +739,20 @@ func (f *file) lintErrors() {
 	}
 }
 
+func lintCapAndPunct(s string) (isCap, isPunct bool) {
+	first, firstN := utf8.DecodeRuneInString(s)
+	last, _ := utf8.DecodeLastRuneInString(s)
+	isPunct = last == '.' || last == ':' || last == '!'
+	isCap = unicode.IsUpper(first)
+	if isCap && len(s) > firstN {
+		// Don't flag strings starting with something that looks like an initialism.
+		if second, _ := utf8.DecodeRuneInString(s[firstN:]); unicode.IsUpper(second) {
+			isCap = false
+		}
+	}
+	return
+}
+
 // lintErrorStrings examines error strings. It complains if they are capitalized or end in punctuation.
 func (f *file) lintErrorStrings() {
 	f.walk(func(node ast.Node) bool {
@@ -760,10 +774,7 @@ func (f *file) lintErrorStrings() {
 		if s == "" {
 			return true
 		}
-		first, _ := utf8.DecodeRuneInString(s)
-		last, _ := utf8.DecodeLastRuneInString(s)
-		isCap := unicode.IsUpper(first)
-		isPunct := last == '.' || last == ':' || last == '!'
+		isCap, isPunct := lintCapAndPunct(s)
 		var msg string
 		switch {
 		case isCap && isPunct:
