@@ -266,7 +266,7 @@ func (f *file) lintNames() {
 		if id.Name == should {
 			return
 		}
-		if strings.Contains(id.Name, "_") {
+		if len(id.Name) > 2 && strings.Contains(id.Name[1:], "_") {
 			f.errorf(id, 0.9, "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
 			return
 		}
