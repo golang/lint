@@ -658,9 +658,19 @@ func (f *file) lintElses() {
 		if len(ifStmt.Body.List) == 0 {
 			return true
 		}
+		shortDecl := false // does the if statement have a ":=" initialization statement?
+		if ifStmt.Init != nil {
+			if as, ok := ifStmt.Init.(*ast.AssignStmt); ok && as.Tok == token.DEFINE {
+				shortDecl = true
+			}
+		}
 		lastStmt := ifStmt.Body.List[len(ifStmt.Body.List)-1]
 		if _, ok := lastStmt.(*ast.ReturnStmt); ok {
-			f.errorf(ifStmt.Else, 1, "if block ends with a return statement, so drop this else and outdent its block")
+			extra := ""
+			if shortDecl {
+				extra = " (move short variable declaration to its own line if necessary)"
+			}
+			f.errorf(ifStmt.Else, 1, "if block ends with a return statement, so drop this else and outdent its block"+extra)
 		}
 		return true
 	})

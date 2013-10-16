@@ -13,3 +13,11 @@ func f(x int) bool {
 	}
 	return false
 }
+
+func g(f func() bool) string {
+	if ok := f(); ok {
+		return "it's okay"
+	} else { // MATCH /if.*return.*else.*outdent.*short.*var.*declaration/
+		return "it's NOT okay!"
+	}
+}
