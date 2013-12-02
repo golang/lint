@@ -20,6 +20,7 @@ import (
 )
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
+var foundProblems = 0
 
 func main() {
 	flag.Parse()
@@ -31,6 +32,10 @@ func main() {
 		} else {
 			lintFile(filename)
 		}
+	}
+
+	if foundProblems > 0 {
+		os.Exit(1)
 	}
 }
 
@@ -55,6 +60,7 @@ func lintFile(filename string) {
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			fmt.Printf("%s:%v: %s\n", filename, p.Position, p.Text)
+			foundProblems = foundProblems + 1
 		}
 	}
 }
