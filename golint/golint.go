@@ -59,7 +59,7 @@ func lintStdin() {
 		return
 	}
 
-	lintSrc("stdin", bytes)
+	lintSrc("(standard input)", bytes)
 }
 
 func lintSrc(filename string, src []byte) {
