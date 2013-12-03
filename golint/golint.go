@@ -24,12 +24,15 @@ var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a
 func main() {
 	flag.Parse()
 
-	// TODO(dsymonds): Support linting of stdin.
-	for _, filename := range flag.Args() {
-		if isDir(filename) {
-			lintDir(filename)
-		} else {
-			lintFile(filename)
+	if len(flag.Args()) == 0 {
+		lintStdin()
+	} else {
+		for _, filename := range flag.Args() {
+			if isDir(filename) {
+				lintDir(filename)
+			} else {
+				lintFile(filename)
+			}
 		}
 	}
 }
@@ -46,6 +49,20 @@ func lintFile(filename string) {
 		return
 	}
 
+	lintSrc(filename, src)
+}
+
+func lintStdin() {
+	bytes, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		log.Printf("Failed reading stdin: %v", err)
+		return
+	}
+
+	lintSrc("stdin", bytes)
+}
+
+func lintSrc(filename string, src []byte) {
 	l := new(lint.Linter)
 	ps, err := l.Lint(filename, src)
 	if err != nil {
