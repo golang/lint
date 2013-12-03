@@ -24,7 +24,6 @@ var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a
 func main() {
 	flag.Parse()
 
-	// TODO(dsymonds): Support linting of stdin.
 	for _, filename := range flag.Args() {
 		if isDir(filename) {
 			lintDir(filename)
