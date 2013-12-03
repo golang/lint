@@ -20,7 +20,7 @@ import (
 )
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
-var foundProblems = 0
+var lintingError = false
 
 func main() {
 	flag.Parse()
@@ -34,7 +34,8 @@ func main() {
 		}
 	}
 
-	if foundProblems > 0 {
+	// exit with error code if there was trouble reading or parsing a file.
+	if lintingError {
 		os.Exit(1)
 	}
 }
@@ -48,6 +49,7 @@ func lintFile(filename string) {
 	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Printf("Failed reading %v: %v", filename, err)
+		lintingError = true
 		return
 	}
 
@@ -55,12 +57,12 @@ func lintFile(filename string) {
 	ps, err := l.Lint(filename, src)
 	if err != nil {
 		log.Printf("Failed parsing %v: %v", filename, err)
+		lintingError = true
 		return
 	}
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			fmt.Printf("%s:%v: %s\n", filename, p.Position, p.Text)
-			foundProblems = foundProblems + 1
 		}
 	}
 }
