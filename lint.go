@@ -77,6 +77,7 @@ func (f *file) lint() []Problem {
 	f.lintErrors()
 	f.lintErrorStrings()
 	f.lintReceiverNames()
+	f.lintIncDec()
 
 	return f.problems
 }
@@ -836,6 +837,34 @@ func (f *file) lintReceiverNames() {
 	})
 }
 
+// lintIncDec examines statements that increment or decrement a variable.
+// It complains if they don't use x++ or x--.
+func (f *file) lintIncDec() {
+	f.walk(func(n ast.Node) bool {
+		as, ok := n.(*ast.AssignStmt)
+		if !ok {
+			return true
+		}
+		if len(as.Lhs) != 1 {
+			return true
+		}
+		if !isOne(as.Rhs[0]) {
+			return true
+		}
+		var suffix string
+		switch as.Tok {
+		case token.ADD_ASSIGN:
+			suffix = "++"
+		case token.SUB_ASSIGN:
+			suffix = "--"
+		default:
+			return true
+		}
+		f.errorf(as, 0.8, "should replace %s with %s%s", f.render(as), f.render(as.Lhs[0]), suffix)
+		return true
+	})
+}
+
 func receiverType(fn *ast.FuncDecl) string {
 	switch e := fn.Recv.List[0].Type.(type) {
 	case *ast.Ident:
@@ -889,6 +918,11 @@ func isBlank(id *ast.Ident) bool { return id != nil && id.Name == "_" }
 func isPkgDot(expr ast.Expr, pkg, name string) bool {
 	sel, ok := expr.(*ast.SelectorExpr)
 	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
+}
+
+func isOne(expr ast.Expr) bool {
+	lit, ok := expr.(*ast.BasicLit)
+	return ok && lit.Kind == token.INT && lit.Value == "1"
 }
 
 func isIntLiteral(expr ast.Expr) bool {
