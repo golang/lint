@@ -56,6 +56,8 @@ type file struct {
 
 	// sortable is the set of types in the file that implement sort.Interface.
 	sortable map[string]bool
+	// main is whether this file is in a "main" package.
+	main bool
 
 	problems []Problem
 }
@@ -64,6 +66,7 @@ func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") 
 
 func (f *file) lint() []Problem {
 	f.scanSortable()
+	f.main = f.isMain()
 
 	f.lintPackageComment()
 	f.lintImports()
@@ -122,6 +125,13 @@ func (f *file) scanSortable() {
 	}
 }
 
+func (f *file) isMain() bool {
+	if f.f.Name.Name == "main" {
+		return true
+	}
+	return false
+}
+
 // lintPackageComment checks package comments. It complains if
 // there is no package comment, or if it is not of the right form.
 // This has a notable false positive in that a package comment
@@ -152,7 +162,7 @@ func (f *file) lintPackageComment() {
 // not documented.
 func (f *file) lintBlankImports() {
 	// In package main and in tests, we don't complain about blank imports.
-	if f.f.Name.Name == "main" || f.isTest() {
+	if f.main || f.isTest() {
 		return
 	}
 
