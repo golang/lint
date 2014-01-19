@@ -1,9 +1,10 @@
 ;;; golint.el --- lint for the Go source code
-;;;    https://github.com/golang/lint
 
 ;; Copyright 2013 The Go Authors. All rights reserved.
 ;; Use of this source code is governed by a BSD-style
 ;; license that can be found in the LICENSE file.
+
+;; URL: https://github.com/golang/lint
 
 ;;; Commentary:
 
@@ -20,6 +21,7 @@
 ;;   For more usage, see Compilation-Mode:
 ;;     http://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation-Mode.html
 
+;;; Code:
 (require 'compile)
 
 (defun go-lint-buffer-name (mode) 
@@ -44,3 +46,5 @@
                      'golint-mode))
 
 (provide 'golint)
+
+;;; golint.el ends here
