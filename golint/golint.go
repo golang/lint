@@ -19,17 +19,26 @@ import (
 	"github.com/golang/lint"
 )
 
-var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
+var (
+	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
+	failOnProblem = flag.Bool("fail_on_problem", false, "return failure exit code on problem")
+)
 
 func main() {
 	flag.Parse()
 
+	success := true
+
 	for _, filename := range flag.Args() {
 		if isDir(filename) {
-			lintDir(filename)
+			success = lintDir(filename) && success
 		} else {
-			lintFile(filename)
+			success = lintFile(filename) && success
 		}
+	}
+
+	if !success {
+		os.Exit(1)
 	}
 }
 
@@ -38,31 +47,42 @@ func isDir(filename string) bool {
 	return err == nil && fi.IsDir()
 }
 
-func lintFile(filename string) {
+func lintFile(filename string) bool {
+	success := true
+
 	src, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Printf("Failed reading %v: %v", filename, err)
-		return
+		return false
 	}
 
 	l := new(lint.Linter)
 	ps, err := l.Lint(filename, src)
 	if err != nil {
 		log.Printf("Failed parsing %v: %v", filename, err)
-		return
+		return false
 	}
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			fmt.Printf("%s:%v: %s\n", filename, p.Position, p.Text)
+			if *failOnProblem && success {
+				success = false
+			}
 		}
 	}
+
+	return success
 }
 
-func lintDir(dirname string) {
+func lintDir(dirname string) bool {
+	success := true
+
 	filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() && strings.HasSuffix(path, ".go") {
-			lintFile(path)
+			success = lintFile(path) && success
 		}
 		return err
 	})
+
+	return success
 }
