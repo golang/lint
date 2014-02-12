@@ -448,6 +448,7 @@ var commonInitialisms = map[string]bool{
 	"RAM":   true,
 	"RHS":   true,
 	"RPC":   true,
+	"SLA":   true,
 	"TTL":   true,
 	"UI":    true,
 	"UID":   true,
