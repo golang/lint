@@ -21,6 +21,8 @@ import (
 	"unicode/utf8"
 )
 
+const styleGuideBase = "http://golang.org/s/style"
+
 // A Linter lints Go source code.
 type Linter struct {
 }
@@ -29,11 +31,15 @@ type Linter struct {
 type Problem struct {
 	Position   token.Position // position in source file
 	Text       string         // the prose that describes the problem
+	Link       string         // (optional) the link to the style guide for the problem
 	Confidence float64        // a value in (0,1] estimating the confidence in this problem's correctness
 	LineText   string         // the source line
 }
 
 func (p *Problem) String() string {
+	if p.Link != "" {
+		return p.Text + "\n\n" + p.Link
+	}
 	return p.Text
 }
 
@@ -85,11 +91,12 @@ func (f *file) lint() []Problem {
 	return f.problems
 }
 
-func (f *file) errorf(n ast.Node, confidence float64, format string, a ...interface{}) {
+func (f *file) errorf(n ast.Node, confidence float64, link, format string, a ...interface{}) {
 	p := f.fset.Position(n.Pos())
 	f.problems = append(f.problems, Problem{
 		Position:   p,
 		Text:       fmt.Sprintf(format, a...),
+		Link:       link,
 		Confidence: confidence,
 		LineText:   srcLine(f.src, p),
 	})
@@ -142,19 +149,20 @@ func (f *file) lintPackageComment() {
 		return
 	}
 
+	const link = styleGuideBase + "#Package_Comments"
 	if f.f.Doc == nil {
-		f.errorf(f.f, 0.2, "should have a package comment, unless it's in another file for this package")
+		f.errorf(f.f, 0.2, link, "should have a package comment, unless it's in another file for this package")
 		return
 	}
 	s := f.f.Doc.Text()
 	prefix := "Package " + f.f.Name.Name + " "
 	if ts := strings.TrimLeft(s, " \t"); ts != s {
-		f.errorf(f.f.Doc, 1, "package comment should not have leading space")
+		f.errorf(f.f.Doc, 1, link, "package comment should not have leading space")
 		s = ts
 	}
 	// Only non-main packages need to keep to this form.
 	if f.f.Name.Name != "main" && !strings.HasPrefix(s, prefix) {
-		f.errorf(f.f.Doc, 1, `package comment should be of the form "%s..."`, prefix)
+		f.errorf(f.f.Doc, 1, link, `package comment should be of the form "%s..."`, prefix)
 	}
 }
 
@@ -184,7 +192,8 @@ func (f *file) lintBlankImports() {
 
 		// This is the first blank import of a group.
 		if imp.Doc == nil && imp.Comment == nil {
-			f.errorf(imp, 1, "a blank import should be only in a main or test package, or have a comment justifying it")
+			link := ""
+			f.errorf(imp, 1, link, "a blank import should be only in a main or test package, or have a comment justifying it")
 		}
 	}
 }
@@ -195,12 +204,14 @@ func (f *file) lintImports() {
 	for i, is := range f.f.Imports {
 		_ = i
 		if is.Name != nil && is.Name.Name == "." && !f.isTest() {
-			f.errorf(is, 1, "should not use dot imports")
+			f.errorf(is, 1, styleGuideBase+"#Import_Dot", "should not use dot imports")
 		}
 
 	}
 
 }
+
+const docCommentsLink = styleGuideBase + "#Doc_Comments"
 
 // lintExported examines the doc comments of exported names.
 // It complains if any required doc comments are missing,
@@ -255,7 +266,7 @@ var allCapsRE = regexp.MustCompile(`^[A-Z0-9_]+$`)
 func (f *file) lintNames() {
 	// Package names need slightly different handling than other names.
 	if strings.Contains(f.f.Name.Name, "_") && !strings.HasSuffix(f.f.Name.Name, "_test") {
-		f.errorf(f.f, 1, "don't use an underscore in package name")
+		f.errorf(f.f, 1, "http://golang.org/doc/effective_go.html#package-names", "don't use an underscore in package name")
 	}
 
 	check := func(id *ast.Ident, thing string) {
@@ -265,12 +276,12 @@ func (f *file) lintNames() {
 
 		// Handle two common styles from other languages that don't belong in Go.
 		if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
-			f.errorf(id, 0.8, "don't use ALL_CAPS in Go names; use CamelCase")
+			f.errorf(id, 0.8, styleGuideBase+"#Mixed_Caps", "don't use ALL_CAPS in Go names; use CamelCase")
 			return
 		}
 		if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
 			should := string(id.Name[1]+'a'-'A') + id.Name[2:]
-			f.errorf(id, 0.8, "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
+			f.errorf(id, 0.8, "", "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
 		}
 
 		should := lintName(id.Name)
@@ -278,10 +289,10 @@ func (f *file) lintNames() {
 			return
 		}
 		if len(id.Name) > 2 && strings.Contains(id.Name[1:], "_") {
-			f.errorf(id, 0.9, "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
+			f.errorf(id, 0.9, "http://golang.org/doc/effective_go.html#mixed-caps", "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
 			return
 		}
-		f.errorf(id, 0.8, "%s %s should be %s", thing, id.Name, should)
+		f.errorf(id, 0.8, styleGuideBase+"#Initialisms", "%s %s should be %s", thing, id.Name, should)
 	}
 	f.walk(func(node ast.Node) bool {
 		switch v := node.(type) {
@@ -465,7 +476,7 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 		return
 	}
 	if doc == nil {
-		f.errorf(t, 1, "exported type %v should have comment or be unexported", t.Name)
+		f.errorf(t, 1, docCommentsLink, "exported type %v should have comment or be unexported", t.Name)
 		return
 	}
 
@@ -478,7 +489,7 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 		}
 	}
 	if !strings.HasPrefix(s, t.Name.Name+" ") {
-		f.errorf(doc, 1, `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
+		f.errorf(doc, 1, docCommentsLink, `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
 	}
 }
 
@@ -520,13 +531,13 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 		name = recv + "." + name
 	}
 	if fn.Doc == nil {
-		f.errorf(fn, 1, "exported %s %s should have comment or be unexported", kind, name)
+		f.errorf(fn, 1, docCommentsLink, "exported %s %s should have comment or be unexported", kind, name)
 		return
 	}
 	s := fn.Doc.Text()
 	prefix := fn.Name.Name + " "
 	if !strings.HasPrefix(s, prefix) {
-		f.errorf(fn.Doc, 1, `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		f.errorf(fn.Doc, 1, docCommentsLink, `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
 	}
 }
 
@@ -543,7 +554,7 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 		// Check that none are exported except for the first.
 		for _, n := range vs.Names[1:] {
 			if ast.IsExported(n.Name) {
-				f.errorf(vs, 1, "exported %s %s should have its own declaration", kind, n.Name)
+				f.errorf(vs, 1, "", "exported %s %s should have its own declaration", kind, n.Name)
 				return
 			}
 		}
@@ -561,14 +572,14 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 			if kind == "const" && gd.Lparen.IsValid() {
 				block = " (or a comment on this block)"
 			}
-			f.errorf(vs, 1, "exported %s %s should have comment%s or be unexported", kind, name, block)
+			f.errorf(vs, 1, docCommentsLink, "exported %s %s should have comment%s or be unexported", kind, name, block)
 			genDeclMissingComments[gd] = true
 		}
 		return
 	}
 	prefix := name + " "
 	if !strings.HasPrefix(vs.Doc.Text(), prefix) {
-		f.errorf(vs.Doc, 1, `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		f.errorf(vs.Doc, 1, docCommentsLink, `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
 	}
 }
 
@@ -623,7 +634,7 @@ func (f *file) lintVarDecls() {
 				zero = true
 			}
 			if zero {
-				f.errorf(rhs, 0.9, "should drop = %s from declaration of var %s; it is the zero value", f.render(rhs), v.Names[0])
+				f.errorf(rhs, 0.9, "", "should drop = %s from declaration of var %s; it is the zero value", f.render(rhs), v.Names[0])
 				return false
 			}
 			// If the LHS type is an interface, don't warn, since it is probably a
@@ -638,7 +649,7 @@ func (f *file) lintVarDecls() {
 			if isIntLiteral(rhs) && !isIdent(v.Type, "int") {
 				return false
 			}
-			f.errorf(v.Type, 0.8, "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
+			f.errorf(v.Type, 0.8, "", "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
 			return false
 		}
 		return true
@@ -683,7 +694,7 @@ func (f *file) lintElses() {
 			if shortDecl {
 				extra = " (move short variable declaration to its own line if necessary)"
 			}
-			f.errorf(ifStmt.Else, 1, "if block ends with a return statement, so drop this else and outdent its block"+extra)
+			f.errorf(ifStmt.Else, 1, styleGuideBase+"#Indent_Error_Flow", "if block ends with a return statement, so drop this else and outdent its block"+extra)
 		}
 		return true
 	})
@@ -705,7 +716,7 @@ func (f *file) lintRanges() {
 			return true
 		}
 
-		f.errorf(rs.Value, 1, "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
+		f.errorf(rs.Value, 1, "", "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
 		return true
 	})
 }
@@ -725,7 +736,7 @@ func (f *file) lintErrorf() {
 		if !ok || !isPkgDot(ce.Fun, "fmt", "Sprintf") {
 			return true
 		}
-		f.errorf(node, 1, "should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)")
+		f.errorf(node, 1, "", "should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)")
 		return true
 	})
 }
@@ -756,7 +767,7 @@ func (f *file) lintErrors() {
 				prefix = "Err"
 			}
 			if !strings.HasPrefix(id.Name, prefix) {
-				f.errorf(id, 0.9, "error var %s should have name of the form %sFoo", id.Name, prefix)
+				f.errorf(id, 0.9, "", "error var %s should have name of the form %sFoo", id.Name, prefix)
 			}
 		}
 	}
@@ -809,7 +820,7 @@ func (f *file) lintErrorStrings() {
 		default:
 			return true
 		}
-		f.errorf(str, 0.8, msg)
+		f.errorf(str, 0.8, styleGuideBase+"#Error_Strings", msg)
 		return true
 	})
 }
@@ -834,13 +845,14 @@ func (f *file) lintReceiverNames() {
 			return true
 		}
 		name := names[0].Name
+		const link = styleGuideBase + "#Receiver_Names"
 		if badReceiverNames[name] {
-			f.errorf(n, 1, `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
+			f.errorf(n, 1, link, `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
 			return true
 		}
 		recv := receiverType(fn)
 		if prev, ok := typeReceiver[recv]; ok && prev != name {
-			f.errorf(n, 1, "receiver name %s should be consistent with previous receiver name %s for %s", name, prev, recv)
+			f.errorf(n, 1, link, "receiver name %s should be consistent with previous receiver name %s for %s", name, prev, recv)
 			return true
 		}
 		typeReceiver[recv] = name
@@ -871,7 +883,7 @@ func (f *file) lintIncDec() {
 		default:
 			return true
 		}
-		f.errorf(as, 0.8, "should replace %s with %s%s", f.render(as), f.render(as.Lhs[0]), suffix)
+		f.errorf(as, 0.8, "", "should replace %s with %s%s", f.render(as), f.render(as.Lhs[0]), suffix)
 		return true
 	})
 }
