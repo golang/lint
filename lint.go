@@ -21,7 +21,7 @@ import (
 	"unicode/utf8"
 )
 
-const styleGuideBase = "http://golang.org/s/style"
+const styleGuideBase = "http://golang.org/s/comments"
 
 // A Linter lints Go source code.
 type Linter struct {
