@@ -34,6 +34,13 @@ var negID int64 = -1
 var parenID int64 = (17)
 var crazyID int64 = -(-(-(-9)))
 
+// Same, but for strings and floats.
+type stringT string
+type floatT float64
+
+var stringV stringT = "abc"
+var floatV floatT = 123.45
+
 // No warning because the LHS names an interface type.
 var data interface{} = googleIPs
 

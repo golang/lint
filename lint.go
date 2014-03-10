@@ -645,8 +645,8 @@ func (f *file) lintVarDecls() {
 			if _, ok := v.Type.(*ast.InterfaceType); ok {
 				return false
 			}
-			// If the RHS is an int literal, only warn if the LHS type is "int".
-			if isIntLiteral(rhs) && !isIdent(v.Type, "int") {
+			// If the RHS is an untyped const, only warn if the LHS type is its default type.
+			if defType, ok := isUntypedConst(rhs); ok && !isIdent(v.Type, defType) {
 				return false
 			}
 			f.errorf(v.Type, 0.8, "", "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
@@ -946,6 +946,27 @@ func isPkgDot(expr ast.Expr, pkg, name string) bool {
 func isOne(expr ast.Expr) bool {
 	lit, ok := expr.(*ast.BasicLit)
 	return ok && lit.Kind == token.INT && lit.Value == "1"
+}
+
+var basicLitKindTypes = map[token.Token]string{
+	token.FLOAT:  "float64",
+	token.IMAG:   "complex128",
+	token.CHAR:   "rune",
+	token.STRING: "string",
+}
+
+// isUntypedConst reports whether expr is an untyped constant,
+// and indicates what its default type is.
+func isUntypedConst(expr ast.Expr) (defType string, ok bool) {
+	if isIntLiteral(expr) {
+		return "int", true
+	}
+	if bl, ok := expr.(*ast.BasicLit); ok {
+		if dt, ok := basicLitKindTypes[bl.Kind]; ok {
+			return dt, true
+		}
+	}
+	return "", false
 }
 
 func isIntLiteral(expr ast.Expr) bool {
