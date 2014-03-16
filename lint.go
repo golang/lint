@@ -351,11 +351,8 @@ func (f *file) lintNames() {
 				}
 			}
 		case *ast.InterfaceType:
-			for _, f := range v.Methods.List {
-				for _, id := range f.Names {
-					check(id, "interface method")
-				}
-			}
+			// Do not check interface method names.
+			// They are often constrainted by the method names of concrete types.
 		case *ast.RangeStmt:
 			if v.Tok == token.ASSIGN {
 				return true

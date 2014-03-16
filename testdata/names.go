@@ -48,5 +48,5 @@ func (t *t_wow) f(more_under string)    {} // MATCH /underscore.*method paramete
 func (t *t_wow) g() (still_more string) {} // MATCH /underscore.*method result.*still_more/
 
 type i interface {
-	CheckHtmlPath() string // MATCH /interface method.*CheckHtmlPath.*CheckHTMLPath/
+	CheckHtml() string // okay; interface method names are often constrained by the concrete types' method names
 }
