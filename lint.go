@@ -462,6 +462,7 @@ var commonInitialisms = map[string]bool{
 	"UID":   true,
 	"URL":   true,
 	"UTF8":  true,
+	"VM":    true,
 	"XML":   true,
 }
 
