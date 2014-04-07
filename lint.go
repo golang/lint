@@ -87,6 +87,7 @@ func (f *file) lint() []Problem {
 	f.lintErrorStrings()
 	f.lintReceiverNames()
 	f.lintIncDec()
+	f.lintMake()
 
 	return f.problems
 }
@@ -886,6 +887,35 @@ func (f *file) lintIncDec() {
 	})
 }
 
+// lineMake examines statements that declare and initialize a variable with make.
+// It complains if they are constructing a zero element slice.
+func (f *file) lintMake() {
+	f.walk(func(n ast.Node) bool {
+		as, ok := n.(*ast.AssignStmt)
+		if !ok {
+			return true
+		}
+		// Only want single var := assignment statements.
+		if len(as.Lhs) != 1 || as.Tok != token.DEFINE {
+			return true
+		}
+		ce, ok := as.Rhs[0].(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		// Check if ce is make([]T, 0).
+		if !isIdent(ce.Fun, "make") || len(ce.Args) != 2 || !isZero(ce.Args[1]) {
+			return true
+		}
+		at, ok := ce.Args[0].(*ast.ArrayType)
+		if !ok || at.Len != nil {
+			return true
+		}
+		f.errorf(as, 0.8, "", `can probably use "var %s %s" instead`, f.render(as.Lhs[0]), f.render(at))
+		return true
+	})
+}
+
 func receiverType(fn *ast.FuncDecl) string {
 	switch e := fn.Recv.List[0].Type.(type) {
 	case *ast.Ident:
@@ -939,6 +969,11 @@ func isBlank(id *ast.Ident) bool { return id != nil && id.Name == "_" }
 func isPkgDot(expr ast.Expr, pkg, name string) bool {
 	sel, ok := expr.(*ast.SelectorExpr)
 	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
+}
+
+func isZero(expr ast.Expr) bool {
+	lit, ok := expr.(*ast.BasicLit)
+	return ok && lit.Kind == token.INT && lit.Value == "0"
 }
 
 func isOne(expr ast.Expr) bool {
