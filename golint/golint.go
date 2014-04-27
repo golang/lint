@@ -11,7 +11,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,14 +40,14 @@ func isDir(filename string) bool {
 func lintFile(filename string) {
 	src, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Printf("Failed reading %v: %v", filename, err)
+		fmt.Fprintln(os.Stderr, err)
 		return
 	}
 
 	l := new(lint.Linter)
 	ps, err := l.Lint(filename, src)
 	if err != nil {
-		log.Printf("Failed parsing %v: %v", filename, err)
+		fmt.Fprintf(os.Stderr, "%v:%v\n", filename, err)
 		return
 	}
 	for _, p := range ps {
