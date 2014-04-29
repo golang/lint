@@ -295,6 +295,16 @@ func (f *file) lintNames() {
 		}
 		f.errorf(id, 0.8, styleGuideBase+"#Initialisms", "%s %s should be %s", thing, id.Name, should)
 	}
+	checkList := func(fl *ast.FieldList, thing string) {
+		if fl == nil {
+			return
+		}
+		for _, f := range fl.List {
+			for _, id := range f.Names {
+				check(id, thing)
+			}
+		}
+	}
 	f.walk(func(node ast.Node) bool {
 		switch v := node.(type) {
 		case *ast.AssignStmt:
@@ -312,16 +322,6 @@ func (f *file) lintNames() {
 			}
 			check(v.Name, "func")
 
-			checkList := func(fl *ast.FieldList, thing string) {
-				if fl == nil {
-					return
-				}
-				for _, f := range fl.List {
-					for _, id := range f.Names {
-						check(id, thing)
-					}
-				}
-			}
 			thing := "func"
 			if v.Recv != nil {
 				thing = "method"
@@ -354,6 +354,14 @@ func (f *file) lintNames() {
 		case *ast.InterfaceType:
 			// Do not check interface method names.
 			// They are often constrainted by the method names of concrete types.
+			for _, x := range v.Methods.List {
+				ft, ok := x.Type.(*ast.FuncType)
+				if !ok { // might be an embedded interface name
+					continue
+				}
+				checkList(ft.Params, "interface method parameter")
+				checkList(ft.Results, "interface method result")
+			}
 		case *ast.RangeStmt:
 			if v.Tok == token.ASSIGN {
 				return true
