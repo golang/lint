@@ -18,7 +18,7 @@ import (
 	"github.com/johnweldon/lint"
 )
 
-var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
+var minConfidence = flag.Float64("min_confidence", 0.7, "minimum confidence of a problem to print it")
 
 func main() {
 	flag.Parse()
