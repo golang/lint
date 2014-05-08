@@ -293,7 +293,7 @@ func (f *file) lintNames() {
 			f.errorf(id, 0.9, "http://golang.org/doc/effective_go.html#mixed-caps", "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
 			return
 		}
-		f.errorf(id, 0.8, styleGuideBase+"#Initialisms", "%s %s should be %s", thing, id.Name, should)
+		f.errorf(id, 0.7, styleGuideBase+"#Initialisms", "%s %s should be %s", thing, id.Name, should)
 	}
 	checkList := func(fl *ast.FieldList, thing string) {
 		if fl == nil {
