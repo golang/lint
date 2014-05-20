@@ -830,7 +830,13 @@ func (f *file) lintErrorStrings() {
 		default:
 			return true
 		}
-		f.errorf(str, 0.8, styleGuideBase+"#Error_Strings", msg)
+		// People use proper nouns and exported Go identifiers in error strings,
+		// so decrease the confidence of warnings for capitalization.
+		conf := 0.8
+		if isCap {
+			conf = 0.6
+		}
+		f.errorf(str, conf, styleGuideBase+"#Error_Strings", msg)
 		return true
 	})
 }
