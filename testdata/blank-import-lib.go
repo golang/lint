@@ -10,6 +10,7 @@ package foo
 
 import (
 	"fmt"
+
 	/* MATCH /blank import/ */ _ "os"
 
 	/* MATCH /blank import/ */ _ "net/http"
