@@ -36,3 +36,6 @@ func (b *bar) f5() {
 
 func (bar) f6() {
 }
+
+func (_ *bar) f7() { // MATCH /receiver name should not be an underscore/
+}

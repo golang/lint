@@ -862,6 +862,10 @@ func (f *file) lintReceiverNames() {
 		}
 		name := names[0].Name
 		const link = styleGuideBase + "#Receiver_Names"
+		if name == "_" {
+			f.errorf(n, 1, link, `receiver name should not be an underscore`)
+			return true
+		}
 		if badReceiverNames[name] {
 			f.errorf(n, 1, link, `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
 			return true
