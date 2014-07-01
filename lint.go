@@ -88,6 +88,7 @@ func (f *file) lint() []Problem {
 	f.lintReceiverNames()
 	f.lintIncDec()
 	f.lintMake()
+	f.lintErrorReturn()
 
 	return f.problems
 }
@@ -933,6 +934,30 @@ func (f *file) lintMake() {
 			return true
 		}
 		f.errorf(as, 0.8, "", `can probably use "var %s %s" instead`, f.render(as.Lhs[0]), f.render(at))
+		return true
+	})
+}
+
+// lintErrorReturn examines function declarations that return an error.
+// It complains if the error isn't the last parameter.
+func (f *file) lintErrorReturn() {
+	f.walk(func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || fn.Type.Results == nil {
+			return true
+		}
+		ret := fn.Type.Results.List
+		if len(ret) <= 1 {
+			return true
+		}
+		// An error return parameter should be the last parameter.
+		// Flag any error parameters found before the last.
+		for _, r := range ret[:len(ret)-1] {
+			if isIdent(r.Type, "error") {
+				f.errorf(fn, 0.9, "", "error should be the last type when returning multiple items")
+				break // only flag one
+			}
+		}
 		return true
 	})
 }
