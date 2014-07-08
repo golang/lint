@@ -236,12 +236,14 @@ func (f *file) lintImports() {
 
 const docCommentsLink = styleGuideBase + "#Doc_Comments"
 
-// lintExported examines the doc comments of exported names.
+// lintExported examines the exported names.
 // It complains if any required doc comments are missing,
 // or if they are not of the right form. The exact rules are in
 // lintFuncDoc, lintTypeDoc and lintValueSpecDoc; this function
 // also tracks the GenDecl structure being traversed to permit
 // doc comments for constants to be on top of the const block.
+// It also complains if the names stutter when combined with
+// the package name.
 func (f *file) lintExported() {
 	if f.isTest() {
 		return
@@ -263,6 +265,11 @@ func (f *file) lintExported() {
 			return true
 		case *ast.FuncDecl:
 			f.lintFuncDoc(v)
+			thing := "func"
+			if v.Recv != nil {
+				thing = "method"
+			}
+			f.checkStutter(v.Name, thing)
 			// Don't proceed inside funcs.
 			return false
 		case *ast.TypeSpec:
@@ -272,6 +279,7 @@ func (f *file) lintExported() {
 				doc = lastGen.Doc
 			}
 			f.lintTypeDoc(v, doc)
+			f.checkStutter(v.Name, "type")
 			// Don't proceed inside types.
 			return false
 		case *ast.ValueSpec:
@@ -613,6 +621,31 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	prefix := name + " "
 	if !strings.HasPrefix(vs.Doc.Text(), prefix) {
 		f.errorf(vs.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+	}
+}
+
+func (f *file) checkStutter(id *ast.Ident, thing string) {
+	pkg, name := f.f.Name.Name, id.Name
+	if !ast.IsExported(name) {
+		// unexported name
+		return
+	}
+	// A name stutters if the package name is a strict prefix
+	// and the next character of the name starts a new word.
+	if len(name) <= len(pkg) {
+		// name is too short to stutter.
+		// This permits the name to be the same as the package name.
+		return
+	}
+	if !strings.EqualFold(pkg, name[:len(pkg)]) {
+		return
+	}
+	// We can assume the name is well-formed UTF-8.
+	// If the next rune after the package name is uppercase or an underscore
+	// the it's starting a new word and thus this name stutters.
+	rem := name[len(pkg):]
+	if next, _ := utf8.DecodeRuneInString(rem); next == '_' || unicode.IsUpper(next) {
+		f.errorf(id, 0.8, category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
 	}
 }
 
