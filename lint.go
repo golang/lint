@@ -503,6 +503,7 @@ var commonInitialisms = map[string]bool{
 	"TTL":   true,
 	"UI":    true,
 	"UID":   true,
+	"URI":   true,
 	"URL":   true,
 	"UTF8":  true,
 	"VM":    true,
