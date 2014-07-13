@@ -312,7 +312,7 @@ func (f *file) lintNames() {
 		}
 		if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
 			should := string(id.Name[1]+'a'-'A') + id.Name[2:]
-			f.errorf(id, 0.8, link("don't use leading k in Go names; %s %s should be %s"), category("naming"), thing, id.Name, should)
+			f.errorf(id, 0.8, link(styleGuideBase+"#Mixed_Caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
 		}
 
 		should := lintName(id.Name)
