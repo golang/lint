@@ -265,11 +265,11 @@ func (f *file) lintExported() {
 			return true
 		case *ast.FuncDecl:
 			f.lintFuncDoc(v)
-			thing := "func"
-			if v.Recv != nil {
-				thing = "method"
+			if v.Recv == nil {
+				// Only check for stutter on functions, not methods.
+				// Method names are not used package-qualified.
+				f.checkStutter(v.Name, "func")
 			}
-			f.checkStutter(v.Name, thing)
 			// Don't proceed inside funcs.
 			return false
 		case *ast.TypeSpec:
