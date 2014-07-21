@@ -649,7 +649,7 @@ func (f *file) checkStutter(id *ast.Ident, thing string) {
 	// the it's starting a new word and thus this name stutters.
 	rem := name[len(pkg):]
 	if next, _ := utf8.DecodeRuneInString(rem); next == '_' || unicode.IsUpper(next) {
-		f.errorf(id, 0.8, category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
+		f.errorf(id, 0.8, link(styleGuideBase+"#Package_Names"), category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
 	}
 }
 
