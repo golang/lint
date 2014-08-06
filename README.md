@@ -59,7 +59,7 @@ autocmd BufWritePost,FileWritePost *.go execute 'Lint' | cwindow
 
 ##Emacs
 
-Add this to your .emacs file:
+Add this to your `.emacs` file:
 
 ```
 (add-to-list 'load-path (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs"))
@@ -70,4 +70,4 @@ If you have multiple entries in your `GOPATH`, replace `$GOPATH` with the right 
 
 Running M-x golint will run golint on the current file.
 
-For more usage, see [Compilation-Mode](http://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation-Mode.html)
+For more usage, see [Compilation-Mode](http://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation-Mode.html).
