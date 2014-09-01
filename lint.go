@@ -80,6 +80,7 @@ func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") 
 
 func (f *file) lint() []Problem {
 	if err := f.typeCheck(); err != nil {
+		/* TODO(dsymonds): Consider reporting these errors when golint operates on entire packages.
 		if e, ok := err.(types.Error); ok {
 			p := f.fset.Position(e.Pos)
 			conf := 1.0
@@ -94,6 +95,7 @@ func (f *file) lint() []Problem {
 
 			// TODO(dsymonds): Abort if !e.Soft?
 		}
+		*/
 	}
 
 	f.scanSortable()
