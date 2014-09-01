@@ -10,3 +10,5 @@ import (
 	"os"
 	_ "path"
 )
+
+var _ os.File // for "os"

@@ -32,3 +32,8 @@ import (
 	_ "go/scanner" // Don't gripe about this or the following line.
 	_ "go/token"
 )
+
+var (
+	_ fmt.Stringer // for "fmt"
+	_ ast.Node     // for "go/ast"
+)

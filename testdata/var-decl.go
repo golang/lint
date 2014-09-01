@@ -6,13 +6,16 @@ package foo
 import "fmt"
 import "net/http"
 
+// Q is a test type.
+type Q bool
+
 var mux *http.ServeMux = http.NewServeMux() // MATCH /should.*\*http\.ServeMux.*inferred/
 var myInt int = 7                           // MATCH /should.*int.*myInt.*inferred/
 
 var myZeroInt int = 0         // MATCH /should.*= 0.*myZeroInt.*zero value/
 var myZeroFlt float32 = 0.    // MATCH /should.*= 0\..*myZeroFlt.*zero value/
 var myZeroF64 float64 = 0.0   // MATCH /should.*= 0\..*myZeroF64.*zero value/
-var myZeroImg complex = 0i    // MATCH /should.*= 0i.*myZeroImg.*zero value/
+var myZeroImg complex64 = 0i  // MATCH /should.*= 0i.*myZeroImg.*zero value/
 var myZeroStr string = ""     // MATCH /should.*= "".*myZeroStr.*zero value/
 var myZeroRaw string = ``     // MATCH /should.*= ``.*myZeroRaw.*zero value/
 var myZeroPtr *Q = nil        // MATCH /should.*= nil.*myZeroPtr.*zero value/
@@ -26,7 +29,7 @@ var x = 0
 var str fmt.Stringer
 
 // No warning because this is a const.
-const x uint64 = 7
+const k uint64 = 7
 
 // No warnings because the RHS is an ideal int, and the LHS is a different int type.
 var userID int64 = 1235
@@ -43,6 +46,11 @@ var floatV floatT = 123.45
 
 // No warning because the LHS names an interface type.
 var data interface{} = googleIPs
+var googleIPs []int
 
 // No warning because it's a common idiom for interface satisfaction.
 var _ Server = (*serverImpl)(nil)
+
+// Server is a test type.
+type Server interface{}
+type serverImpl struct{}

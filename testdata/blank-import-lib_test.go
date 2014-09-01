@@ -18,3 +18,8 @@ import (
 	_ "net/http"
 	_ "path"
 )
+
+var (
+	_ fmt.Stringer // for "fmt"
+	_ testing.T    // for "testing"
+)

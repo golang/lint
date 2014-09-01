@@ -21,6 +21,7 @@ var (
 
 func f() {
 	var whatever = errors.New("ok") // ok
+	_ = whatever
 }
 
 // Check for the error strings themselves.

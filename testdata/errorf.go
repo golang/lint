@@ -20,3 +20,5 @@ func f(x int) error {
 	}
 	return nil
 }
+
+func g(s string) string { return "prefix: " + s }

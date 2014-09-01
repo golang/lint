@@ -19,6 +19,10 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"code.google.com/p/go.tools/go/types"
+
+	_ "code.google.com/p/go.tools/go/gcimporter" // use gcimporter as types.DefaultImport
 )
 
 const styleGuideBase = "http://golang.org/s/comments"
@@ -61,6 +65,9 @@ type file struct {
 	src      []byte
 	filename string
 
+	typesPkg  *types.Package
+	typesInfo *types.Info
+
 	// sortable is the set of types in the file that implement sort.Interface.
 	sortable map[string]bool
 	// main is whether this file is in a "main" package.
@@ -72,6 +79,23 @@ type file struct {
 func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") }
 
 func (f *file) lint() []Problem {
+	if err := f.typeCheck(); err != nil {
+		if e, ok := err.(types.Error); ok {
+			p := f.fset.Position(e.Pos)
+			conf := 1.0
+			if strings.Contains(e.Msg, "can't find import: ") {
+				// Golint is probably being run in a context that doesn't support
+				// typechecking (e.g. package files aren't found), so don't warn about it.
+				conf = 0
+			}
+			if conf > 0 {
+				f.errorfAt(p, conf, category("typechecking"), e.Msg)
+			}
+
+			// TODO(dsymonds): Abort if !e.Soft?
+		}
+	}
+
 	f.scanSortable()
 	f.main = f.isMain()
 
@@ -101,6 +125,10 @@ type category string
 // and must end with a format string and any arguments.
 func (f *file) errorf(n ast.Node, confidence float64, args ...interface{}) {
 	p := f.fset.Position(n.Pos())
+	f.errorfAt(p, confidence, args...)
+}
+
+func (f *file) errorfAt(p token.Position, confidence float64, args ...interface{}) {
 	problem := Problem{
 		Position:   p,
 		Confidence: confidence,
@@ -123,6 +151,19 @@ argLoop:
 	problem.Text = fmt.Sprintf(args[0].(string), args[1:]...)
 
 	f.problems = append(f.problems, problem)
+}
+
+func (f *file) typeCheck() error {
+	// Do typechecking without errors so we do as much as possible.
+	config := &types.Config{}
+	f.typesInfo = &types.Info{
+		Types: make(map[ast.Expr]types.TypeAndValue),
+		Defs:  make(map[*ast.Ident]types.Object),
+		Uses:  make(map[*ast.Ident]types.Object),
+	}
+	var err error
+	f.typesPkg, err = config.Check(f.f.Name.Name, f.fset, []*ast.File{f.f}, f.typesInfo)
+	return err
 }
 
 func (f *file) scanSortable() {
