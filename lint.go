@@ -49,39 +49,57 @@ func (p *Problem) String() string {
 
 // Lint lints src.
 func (l *Linter) Lint(filename string, src []byte) ([]Problem, error) {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "", src, parser.ParseComments)
-	if err != nil {
-		return nil, err
-	}
-	return (&file{fset: fset, f: f, src: src, filename: filename}).lint(), nil
+	return l.LintFiles(map[string][]byte{filename: src})
 }
 
-// file represents a file being linted.
-type file struct {
-	fset     *token.FileSet
-	f        *ast.File
-	src      []byte
-	filename string
+// LintFiles lints a set of files.
+// The argument is a map of filename to source.
+func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
+	if len(files) == 0 {
+		return nil, nil
+	}
+	pkg := &pkg{
+		fset:  token.NewFileSet(),
+		files: make(map[string]*file),
+	}
+	for filename, src := range files {
+		f, err := parser.ParseFile(pkg.fset, filename, src, parser.ParseComments)
+		if err != nil {
+			return nil, err
+		}
+		// TODO(dsymonds): Check for package name mismatch.
+		pkg.files[filename] = &file{
+			pkg:      pkg,
+			f:        f,
+			fset:     pkg.fset,
+			src:      src,
+			filename: filename,
+		}
+	}
+	return pkg.lint(), nil
+}
+
+// pkg represents a package being linted.
+type pkg struct {
+	fset  *token.FileSet
+	files map[string]*file
 
 	typesPkg  *types.Package
 	typesInfo *types.Info
 
-	// sortable is the set of types in the file that implement sort.Interface.
+	// sortable is the set of types in the package that implement sort.Interface.
 	sortable map[string]bool
-	// main is whether this file is in a "main" package.
+	// main is whether this is a "main" package.
 	main bool
 
 	problems []Problem
 }
 
-func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") }
-
-func (f *file) lint() []Problem {
-	if err := f.typeCheck(); err != nil {
+func (p *pkg) lint() []Problem {
+	if err := p.typeCheck(); err != nil {
 		/* TODO(dsymonds): Consider reporting these errors when golint operates on entire packages.
 		if e, ok := err.(types.Error); ok {
-			p := f.fset.Position(e.Pos)
+			pos := p.fset.Position(e.Pos)
 			conf := 1.0
 			if strings.Contains(e.Msg, "can't find import: ") {
 				// Golint is probably being run in a context that doesn't support
@@ -89,7 +107,7 @@ func (f *file) lint() []Problem {
 				conf = 0
 			}
 			if conf > 0 {
-				f.errorfAt(p, conf, category("typechecking"), e.Msg)
+				p.errorfAt(pos, conf, category("typechecking"), e.Msg)
 			}
 
 			// TODO(dsymonds): Abort if !e.Soft?
@@ -97,9 +115,28 @@ func (f *file) lint() []Problem {
 		*/
 	}
 
-	f.scanSortable()
-	f.main = f.isMain()
+	p.scanSortable()
+	p.main = p.isMain()
 
+	for _, f := range p.files {
+		f.lint()
+	}
+	// TODO(dsymonds): sort?
+	return p.problems
+}
+
+// file represents a file being linted.
+type file struct {
+	pkg      *pkg
+	f        *ast.File
+	fset     *token.FileSet
+	src      []byte
+	filename string
+}
+
+func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") }
+
+func (f *file) lint() {
 	f.lintPackageComment()
 	f.lintImports()
 	f.lintBlankImports()
@@ -115,8 +152,6 @@ func (f *file) lint() []Problem {
 	f.lintIncDec()
 	f.lintMake()
 	f.lintErrorReturn()
-
-	return f.problems
 }
 
 type link string
@@ -125,15 +160,20 @@ type category string
 // The variadic arguments may start with link and category types,
 // and must end with a format string and any arguments.
 func (f *file) errorf(n ast.Node, confidence float64, args ...interface{}) {
-	p := f.fset.Position(n.Pos())
-	f.errorfAt(p, confidence, args...)
+	pos := f.fset.Position(n.Pos())
+	if pos.Filename == "" {
+		pos.Filename = f.filename
+	}
+	f.pkg.errorfAt(pos, confidence, args...)
 }
 
-func (f *file) errorfAt(p token.Position, confidence float64, args ...interface{}) {
+func (p *pkg) errorfAt(pos token.Position, confidence float64, args ...interface{}) {
 	problem := Problem{
-		Position:   p,
+		Position:   pos,
 		Confidence: confidence,
-		LineText:   srcLine(f.src, p),
+	}
+	if pos.Filename != "" {
+		problem.LineText = srcLine(p.files[pos.Filename].src, pos)
 	}
 
 argLoop:
@@ -151,12 +191,12 @@ argLoop:
 
 	problem.Text = fmt.Sprintf(args[0].(string), args[1:]...)
 
-	f.problems = append(f.problems, problem)
+	p.problems = append(p.problems, problem)
 }
 
 var gcImporter = gcimporter.Import
 
-func (f *file) typeCheck() error {
+func (p *pkg) typeCheck() error {
 	// Do typechecking without errors so we do as much as possible.
 	config := &types.Config{
 		Import: gcImporter,
@@ -166,24 +206,30 @@ func (f *file) typeCheck() error {
 		Defs:  make(map[*ast.Ident]types.Object),
 		Uses:  make(map[*ast.Ident]types.Object),
 	}
-	pkg, err := config.Check(f.f.Name.Name, f.fset, []*ast.File{f.f}, info)
+	var anyFile *file
+	var astFiles []*ast.File
+	for _, f := range p.files {
+		anyFile = f
+		astFiles = append(astFiles, f.f)
+	}
+	pkg, err := config.Check(anyFile.f.Name.Name, p.fset, astFiles, info)
 	if err != nil {
 		return err
 	}
-	f.typesPkg = pkg
-	f.typesInfo = info
+	p.typesPkg = pkg
+	p.typesInfo = info
 	return err
 }
 
-func (f *file) typeOf(expr ast.Expr) types.Type {
-	if f.typesInfo == nil {
+func (p *pkg) typeOf(expr ast.Expr) types.Type {
+	if p.typesInfo == nil {
 		return nil
 	}
-	return f.typesInfo.TypeOf(expr)
+	return p.typesInfo.TypeOf(expr)
 }
 
-func (f *file) scanSortable() {
-	f.sortable = make(map[string]bool)
+func (p *pkg) scanSortable() {
+	p.sortable = make(map[string]bool)
 
 	// bitfield for which methods exist on each type.
 	const (
@@ -193,23 +239,34 @@ func (f *file) scanSortable() {
 	)
 	nmap := map[string]int{"Len": Len, "Less": Less, "Swap": Swap}
 	has := make(map[string]int)
-	f.walk(func(n ast.Node) bool {
-		fn, ok := n.(*ast.FuncDecl)
-		if !ok || fn.Recv == nil {
-			return true
-		}
-		// TODO(dsymonds): We could check the signature to be more precise.
-		recv := receiverType(fn)
-		if i, ok := nmap[fn.Name.Name]; ok {
-			has[recv] |= i
-		}
-		return false
-	})
+	for _, f := range p.files {
+		f.walk(func(n ast.Node) bool {
+			fn, ok := n.(*ast.FuncDecl)
+			if !ok || fn.Recv == nil {
+				return true
+			}
+			// TODO(dsymonds): We could check the signature to be more precise.
+			recv := receiverType(fn)
+			if i, ok := nmap[fn.Name.Name]; ok {
+				has[recv] |= i
+			}
+			return false
+		})
+	}
 	for typ, ms := range has {
 		if ms == Len|Less|Swap {
-			f.sortable[typ] = true
+			p.sortable[typ] = true
 		}
 	}
+}
+
+func (p *pkg) isMain() bool {
+	for _, f := range p.files {
+		if f.isMain() {
+			return true
+		}
+	}
+	return false
 }
 
 func (f *file) isMain() bool {
@@ -250,7 +307,7 @@ func (f *file) lintPackageComment() {
 // not documented.
 func (f *file) lintBlankImports() {
 	// In package main and in tests, we don't complain about blank imports.
-	if f.main || f.isTest() {
+	if f.pkg.main || f.isTest() {
 		return
 	}
 
@@ -626,7 +683,7 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 		}
 		switch name {
 		case "Len", "Less", "Swap":
-			if f.sortable[recv] {
+			if f.pkg.sortable[recv] {
 				return
 			}
 		}
@@ -764,8 +821,8 @@ func (f *file) lintVarDecls() {
 				f.errorf(rhs, 0.9, category("zero-value"), "should drop = %s from declaration of var %s; it is the zero value", f.render(rhs), v.Names[0])
 				return false
 			}
-			lhsTyp := f.typeOf(v.Type)
-			rhsTyp := f.typeOf(rhs)
+			lhsTyp := f.pkg.typeOf(v.Type)
+			rhsTyp := f.pkg.typeOf(rhs)
 			if lhsTyp != nil && rhsTyp != nil && !types.Identical(lhsTyp, rhsTyp) {
 				// Assignment to a different type is not redundant.
 				return false
