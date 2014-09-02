@@ -173,7 +173,10 @@ func (p *pkg) errorfAt(pos token.Position, confidence float64, args ...interface
 		Confidence: confidence,
 	}
 	if pos.Filename != "" {
-		problem.LineText = srcLine(p.files[pos.Filename].src, pos)
+		file, fileExists := p.files[pos.Filename]
+		if fileExists {
+			problem.LineText = srcLine(file.src, pos)
+		}
 	}
 
 argLoop:
