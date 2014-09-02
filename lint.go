@@ -20,9 +20,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"code.google.com/p/go.tools/go/gcimporter"
 	"code.google.com/p/go.tools/go/types"
-
-	_ "code.google.com/p/go.tools/go/gcimporter" // use gcimporter as types.DefaultImport
 )
 
 const styleGuideBase = "http://golang.org/s/comments"
@@ -155,17 +154,32 @@ argLoop:
 	f.problems = append(f.problems, problem)
 }
 
+var gcImporter = gcimporter.Import
+
 func (f *file) typeCheck() error {
 	// Do typechecking without errors so we do as much as possible.
-	config := &types.Config{}
-	f.typesInfo = &types.Info{
+	config := &types.Config{
+		Import: gcImporter,
+	}
+	info := &types.Info{
 		Types: make(map[ast.Expr]types.TypeAndValue),
 		Defs:  make(map[*ast.Ident]types.Object),
 		Uses:  make(map[*ast.Ident]types.Object),
 	}
-	var err error
-	f.typesPkg, err = config.Check(f.f.Name.Name, f.fset, []*ast.File{f.f}, f.typesInfo)
+	pkg, err := config.Check(f.f.Name.Name, f.fset, []*ast.File{f.f}, info)
+	if err != nil {
+		return err
+	}
+	f.typesPkg = pkg
+	f.typesInfo = info
 	return err
+}
+
+func (f *file) typeOf(expr ast.Expr) types.Type {
+	if f.typesInfo == nil {
+		return nil
+	}
+	return f.typesInfo.TypeOf(expr)
 }
 
 func (f *file) scanSortable() {
@@ -750,11 +764,20 @@ func (f *file) lintVarDecls() {
 				f.errorf(rhs, 0.9, category("zero-value"), "should drop = %s from declaration of var %s; it is the zero value", f.render(rhs), v.Names[0])
 				return false
 			}
+			lhsTyp := f.typeOf(v.Type)
+			rhsTyp := f.typeOf(rhs)
+			if lhsTyp != nil && rhsTyp != nil && !types.Identical(lhsTyp, rhsTyp) {
+				// Assignment to a different type is not redundant.
+				return false
+			}
+
+			// The next two conditions are for suppressing the warning in situations
+			// where we were unable to typecheck.
+
 			// If the LHS type is an interface, don't warn, since it is probably a
 			// concrete type on the RHS. Note that our feeble lexical check here
 			// will only pick up interface{} and other literal interface types;
 			// that covers most of the cases we care to exclude right now.
-			// TODO(dsymonds): Use typechecker to make this heuristic more accurate.
 			if _, ok := v.Type.(*ast.InterfaceType); ok {
 				return false
 			}

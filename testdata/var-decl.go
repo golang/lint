@@ -4,13 +4,11 @@
 package foo
 
 import "fmt"
-import "net/http"
 
 // Q is a test type.
 type Q bool
 
-var mux *http.ServeMux = http.NewServeMux() // MATCH /should.*\*http\.ServeMux.*inferred/
-var myInt int = 7                           // MATCH /should.*int.*myInt.*inferred/
+var myInt int = 7 // MATCH /should.*int.*myInt.*inferred/
 
 var myZeroInt int = 0         // MATCH /should.*= 0.*myZeroInt.*zero value/
 var myZeroFlt float32 = 0.    // MATCH /should.*= 0\..*myZeroFlt.*zero value/
@@ -54,3 +52,12 @@ var _ Server = (*serverImpl)(nil)
 // Server is a test type.
 type Server interface{}
 type serverImpl struct{}
+
+// LHS is a different type than the RHS.
+var myStringer fmt.Stringer = q(0)
+
+var y string = q(1).String() // MATCH /should.*string/
+
+type q int
+
+func (q) String() string { return "I'm a q" }
