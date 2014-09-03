@@ -173,7 +173,10 @@ func (p *pkg) errorfAt(pos token.Position, confidence float64, args ...interface
 		Confidence: confidence,
 	}
 	if pos.Filename != "" {
-		problem.LineText = srcLine(p.files[pos.Filename].src, pos)
+		// The file might not exist in our mapping if a //line directive was encountered.
+		if f, ok := p.files[pos.Filename]; ok {
+			problem.LineText = srcLine(f.src, pos)
+		}
 	}
 
 argLoop:
