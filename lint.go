@@ -200,8 +200,9 @@ argLoop:
 var gcImporter = gcimporter.Import
 
 func (p *pkg) typeCheck() error {
-	// Do typechecking without errors so we do as much as possible.
 	config := &types.Config{
+		// By setting a no-op error reporter, the type checker does as much work as possible.
+		Error:  func(error) {},
 		Import: gcImporter,
 	}
 	info := &types.Info{
