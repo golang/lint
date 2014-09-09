@@ -217,9 +217,8 @@ func (p *pkg) typeCheck() error {
 		astFiles = append(astFiles, f.f)
 	}
 	pkg, err := config.Check(anyFile.f.Name.Name, p.fset, astFiles, info)
-	if err != nil {
-		return err
-	}
+	// Remember the typechecking info, even if config.Check failed,
+	// since we will get partial information.
 	p.typesPkg = pkg
 	p.typesInfo = info
 	return err

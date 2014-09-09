@@ -4,11 +4,13 @@
 package foo
 
 import "fmt"
+import "net/http"
 
 // Q is a test type.
 type Q bool
 
-var myInt int = 7 // MATCH /should.*int.*myInt.*inferred/
+var myInt int = 7                           // MATCH /should.*int.*myInt.*inferred/
+var mux *http.ServeMux = http.NewServeMux() // MATCH /should.*\*http\.ServeMux.*inferred/
 
 var myZeroInt int = 0         // MATCH /should.*= 0.*myZeroInt.*zero value/
 var myZeroFlt float32 = 0.    // MATCH /should.*= 0\..*myZeroFlt.*zero value/
