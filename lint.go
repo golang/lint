@@ -152,6 +152,7 @@ func (f *file) lint() {
 	f.lintIncDec()
 	f.lintMake()
 	f.lintErrorReturn()
+	f.lintClosureCapture()
 }
 
 type link string
@@ -229,6 +230,13 @@ func (p *pkg) typeOf(expr ast.Expr) types.Type {
 		return nil
 	}
 	return p.typesInfo.TypeOf(expr)
+}
+
+func (p *pkg) objectOf(id *ast.Ident) types.Object {
+	if p.typesInfo == nil {
+		return nil
+	}
+	return p.typesInfo.ObjectOf(id)
 }
 
 func (p *pkg) scanSortable() {
@@ -1145,6 +1153,75 @@ func (f *file) lintErrorReturn() {
 		}
 		return true
 	})
+}
+
+// lintClosureCapture examines closures inside for-loop.
+// It complains if they are capturing loop variables.
+func (f *file) lintClosureCapture() {
+	var body ast.Stmt
+	f.walk(func(n ast.Node) bool {
+		loopVarPoses := make(map[token.Pos]bool)
+		// collect loop variables
+		switch stmt := n.(type) {
+		// for statement
+		case *ast.ForStmt:
+			switch postStmt := stmt.Post.(type) {
+			case *ast.IncDecStmt: // x++ / x--
+				if pos := f.getIdentifierPos(postStmt.X); pos != -1 {
+					loopVarPoses[pos] = true
+				}
+			case *ast.AssignStmt: // x += n / x -= n
+				for _, hs := range postStmt.Lhs {
+					if pos := f.getIdentifierPos(hs); pos != -1 {
+						loopVarPoses[pos] = true
+					}
+				}
+			}
+			body = stmt.Body
+		// range statement
+		case *ast.RangeStmt:
+			if pos := f.getIdentifierPos(stmt.Key); pos != -1 {
+				loopVarPoses[pos] = true
+			}
+			if pos := f.getIdentifierPos(stmt.Value); pos != -1 {
+				loopVarPoses[pos] = true
+			}
+			body = stmt.Body
+		// skip non-loop
+		default:
+			return true
+		}
+		// walk loop body
+		if body == nil {
+			return false
+		}
+		ast.Walk(walker(func(n ast.Node) bool {
+			fn, ok := n.(*ast.FuncLit)
+			if !ok {
+				return true
+			}
+			ast.Walk(walker(func(n ast.Node) bool {
+				if pos := f.getIdentifierPos(n); pos != -1 && loopVarPoses[pos] {
+					f.errorf(n, 0.8, category("closure"), "closure should not capture loop variable %s", n.(*ast.Ident).Name)
+				}
+				return true
+			}), fn)
+			return false
+		}), body)
+		// may be sub for-loop
+		return true
+	})
+}
+
+func (f *file) getIdentifierPos(node ast.Node) token.Pos {
+	id, ok := node.(*ast.Ident)
+	if !ok {
+		return token.Pos(-1)
+	}
+	if obj := f.pkg.objectOf(id); obj != nil {
+		return obj.Pos()
+	}
+	return token.Pos(-1)
 }
 
 func receiverType(fn *ast.FuncDecl) string {
