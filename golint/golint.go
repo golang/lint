@@ -19,6 +19,7 @@ import (
 )
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
+var exitCode = 0
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -49,6 +50,7 @@ func main() {
 	default:
 		lintFiles(flag.Args()...)
 	}
+	os.Exit(exitCode)
 }
 
 func isDir(filename string) bool {
@@ -81,6 +83,7 @@ func lintFiles(filenames ...string) {
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			fmt.Printf("%v: %s\n", p.Position, p.Text)
+			exitCode++
 		}
 	}
 }
