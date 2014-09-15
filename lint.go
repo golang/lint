@@ -52,7 +52,7 @@ func (l *Linter) Lint(filename string, src []byte) ([]Problem, error) {
 	return l.LintFiles(map[string][]byte{filename: src})
 }
 
-// LintFiles lints a set of files.
+// LintFiles lints a set of files of a single package.
 // The argument is a map of filename to source.
 func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 	if len(files) == 0 {
@@ -62,12 +62,17 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 		fset:  token.NewFileSet(),
 		files: make(map[string]*file),
 	}
+	var pkgName string
 	for filename, src := range files {
 		f, err := parser.ParseFile(pkg.fset, filename, src, parser.ParseComments)
 		if err != nil {
 			return nil, err
 		}
-		// TODO(dsymonds): Check for package name mismatch.
+		if pkgName == "" {
+			pkgName = f.Name.Name
+		} else if f.Name.Name != pkgName {
+			return nil, fmt.Errorf("%s is in package %s, not %s", filename, f.Name.Name, pkgName)
+		}
 		pkg.files[filename] = &file{
 			pkg:      pkg,
 			f:        f,
