@@ -31,6 +31,11 @@ var str fmt.Stringer
 // No warning because this is a const.
 const k uint64 = 7
 
+const num = 123
+
+// No warning because the var's RHS is known to be an untyped const.
+var flags uint32 = num
+
 // No warnings because the RHS is an ideal int, and the LHS is a different int type.
 var userID int64 = 1235
 var negID int64 = -1

@@ -206,9 +206,10 @@ func (p *pkg) typeCheck() error {
 		Import: gcImporter,
 	}
 	info := &types.Info{
-		Types: make(map[ast.Expr]types.TypeAndValue),
-		Defs:  make(map[*ast.Ident]types.Object),
-		Uses:  make(map[*ast.Ident]types.Object),
+		Types:  make(map[ast.Expr]types.TypeAndValue),
+		Defs:   make(map[*ast.Ident]types.Object),
+		Uses:   make(map[*ast.Ident]types.Object),
+		Scopes: make(map[ast.Node]*types.Scope),
 	}
 	var anyFile *file
 	var astFiles []*ast.File
@@ -826,6 +827,10 @@ func (f *file) lintVarDecls() {
 			}
 			lhsTyp := f.pkg.typeOf(v.Type)
 			rhsTyp := f.pkg.typeOf(rhs)
+			var scope *types.Scope
+			if obj := f.pkg.typesInfo.ObjectOf(v.Names[0]); obj != nil {
+				scope = obj.Parent()
+			}
 			if lhsTyp != nil && rhsTyp != nil && !types.Identical(lhsTyp, rhsTyp) {
 				// Assignment to a different type is not redundant.
 				return false
@@ -842,7 +847,7 @@ func (f *file) lintVarDecls() {
 				return false
 			}
 			// If the RHS is an untyped const, only warn if the LHS type is its default type.
-			if defType, ok := isUntypedConst(rhs); ok && !isIdent(v.Type, defType) {
+			if defType, ok := f.isUntypedConst(rhs, scope); ok && !isIdent(v.Type, defType) {
 				return false
 			}
 			f.errorf(v.Type, 0.8, category("type-inference"), "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
@@ -1212,49 +1217,37 @@ func isOne(expr ast.Expr) bool {
 	return ok && lit.Kind == token.INT && lit.Value == "1"
 }
 
-var basicLitKindTypes = map[token.Token]string{
-	token.FLOAT:  "float64",
-	token.IMAG:   "complex128",
-	token.CHAR:   "rune",
-	token.STRING: "string",
+var basicTypeKinds = map[types.BasicKind]string{
+	types.UntypedBool:    "bool",
+	types.UntypedInt:     "int",
+	types.UntypedRune:    "rune",
+	types.UntypedFloat:   "float64",
+	types.UntypedComplex: "complex128",
+	types.UntypedString:  "string",
 }
 
 // isUntypedConst reports whether expr is an untyped constant,
 // and indicates what its default type is.
-func isUntypedConst(expr ast.Expr) (defType string, ok bool) {
-	if isIntLiteral(expr) {
-		return "int", true
+// scope may be nil.
+func (f *file) isUntypedConst(expr ast.Expr, scope *types.Scope) (defType string, ok bool) {
+	typ := f.pkg.typeOf(expr)
+	if typ == nil || scope == nil {
+		return "", false
 	}
-	if bl, ok := expr.(*ast.BasicLit); ok {
-		if dt, ok := basicLitKindTypes[bl.Kind]; ok {
+
+	// Re-evaluate expr outside of its context to see if it's untyped.
+	// (An expr evaluated within, for example, an assignment context will get the type of the LHS.)
+	typ, _, err := types.EvalNode(f.fset, expr, f.pkg.typesPkg, scope)
+	if err != nil {
+		return "", false
+	}
+	if b, ok := typ.(*types.Basic); ok {
+		if dt, ok := basicTypeKinds[b.Kind()]; ok {
 			return dt, true
 		}
 	}
-	return "", false
-}
 
-func isIntLiteral(expr ast.Expr) bool {
-	// Either a BasicLit with Kind token.INT,
-	// or some combination of a UnaryExpr with Op token.SUB (for "-<lit>")
-	// or a ParenExpr (for "(<lit>)").
-Loop:
-	for {
-		switch v := expr.(type) {
-		case *ast.UnaryExpr:
-			if v.Op == token.SUB {
-				expr = v.X
-				continue Loop
-			}
-		case *ast.ParenExpr:
-			expr = v.X
-			continue Loop
-		case *ast.BasicLit:
-			if v.Kind == token.INT {
-				return true
-			}
-		}
-		return false
-	}
+	return "", false
 }
 
 // srcLine returns the complete line at p, including the terminating newline.
