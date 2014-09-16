@@ -237,6 +237,26 @@ func (p *pkg) typeOf(expr ast.Expr) types.Type {
 	return p.typesInfo.TypeOf(expr)
 }
 
+// scopeOf returns the tightest scope encompassing id.
+func (p *pkg) scopeOf(id *ast.Ident) *types.Scope {
+	var scope *types.Scope
+	if obj := p.typesInfo.ObjectOf(id); obj != nil {
+		scope = obj.Parent()
+	}
+	if scope == p.typesPkg.Scope() {
+		// We were given a top-level identifier.
+		// Use the file-level scope instead of the package-level scope.
+		pos := id.Pos()
+		for _, f := range p.files {
+			if f.f.Pos() <= pos && pos < f.f.End() {
+				scope = p.typesInfo.Scopes[f.f]
+				break
+			}
+		}
+	}
+	return scope
+}
+
 func (p *pkg) scanSortable() {
 	p.sortable = make(map[string]bool)
 
@@ -832,10 +852,7 @@ func (f *file) lintVarDecls() {
 			}
 			lhsTyp := f.pkg.typeOf(v.Type)
 			rhsTyp := f.pkg.typeOf(rhs)
-			var scope *types.Scope
-			if obj := f.pkg.typesInfo.ObjectOf(v.Names[0]); obj != nil {
-				scope = obj.Parent()
-			}
+			scope := f.pkg.scopeOf(v.Names[0])
 			if lhsTyp != nil && rhsTyp != nil && !types.Identical(lhsTyp, rhsTyp) {
 				// Assignment to a different type is not redundant.
 				return false
