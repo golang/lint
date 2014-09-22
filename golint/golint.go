@@ -36,18 +36,18 @@ func main() {
 
 	switch flag.NArg() {
 	case 0:
-		lintDir(".")
+		os.Exit(lintDir("."))
 	case 1:
 		arg := flag.Arg(0)
 		if isDir(arg) {
-			lintDir(arg)
+			os.Exit(lintDir(arg))
 		} else if exists(arg) {
-			lintFiles(arg)
+			os.Exit(lintFiles(arg))
 		} else {
-			lintPackage(arg)
+			os.Exit(lintPackage(arg))
 		}
 	default:
-		lintFiles(flag.Args()...)
+		os.Exit(lintFiles(flag.Args()...))
 	}
 }
 
@@ -61,7 +61,7 @@ func exists(filename string) bool {
 	return err == nil
 }
 
-func lintFiles(filenames ...string) {
+func lintFiles(filenames ...string) int {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
 		src, err := ioutil.ReadFile(filename)
@@ -76,33 +76,36 @@ func lintFiles(filenames ...string) {
 	ps, err := l.LintFiles(files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return
+		return 1
 	}
+	result := 0
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			fmt.Printf("%v: %s\n", p.Position, p.Text)
+			result = 1
 		}
 	}
+	return result
 }
 
-func lintDir(dirname string) {
+func lintDir(dirname string) int {
 	pkg, err := build.ImportDir(dirname, 0)
-	lintImportedPackage(pkg, err)
+	return lintImportedPackage(pkg, err)
 }
 
-func lintPackage(pkgname string) {
+func lintPackage(pkgname string) int {
 	pkg, err := build.Import(pkgname, "", 0)
-	lintImportedPackage(pkg, err)
+	return lintImportedPackage(pkg, err)
 }
 
-func lintImportedPackage(pkg *build.Package, err error) {
+func lintImportedPackage(pkg *build.Package, err error) int {
 	if err != nil {
 		if _, nogo := err.(*build.NoGoError); nogo {
 			// Don't complain if the failure is due to no Go source files.
-			return
+			return 0
 		}
 		fmt.Fprintln(os.Stderr, err)
-		return
+		return 1
 	}
 
 	var files []string
@@ -115,5 +118,5 @@ func lintImportedPackage(pkg *build.Package, err error) {
 	}
 	// TODO(dsymonds): Do foo_test too (pkg.XTestGoFiles)
 
-	lintFiles(files...)
+	return lintFiles(files...)
 }
