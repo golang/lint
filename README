@@ -3,7 +3,13 @@ Golint is a linter for Go source code.
 To install, run
   go get github.com/golang/lint/golint
 
-Invoke golint with one or more filenames, a directory, or a package name.
+Invoke golint with one or more filenames, a directory, or a package named
+by its import path. Golint uses the same import path syntax as the go
+command (https://golang.org/cmd/go/#hdr-Import_path_syntax) and therefore
+also supports relative import paths like "./...". Additionally the "..."
+wildcard can be used as suffix on relative and absolute file paths to recurse
+into them.
+
 The output of this tool is a list of suggestions in Vim quickfix format,
 which is accepted by lots of different editors.
 

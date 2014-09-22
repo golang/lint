@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/lint"
 )
@@ -39,12 +40,18 @@ func main() {
 		lintDir(".")
 	case 1:
 		arg := flag.Arg(0)
-		if isDir(arg) {
+		if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-4]) {
+			for _, dirname := range allPackagesInFS(arg) {
+				lintDir(dirname)
+			}
+		} else if isDir(arg) {
 			lintDir(arg)
 		} else if exists(arg) {
 			lintFiles(arg)
 		} else {
-			lintPackage(arg)
+			for _, pkgname := range importPaths([]string{arg}) {
+				lintPackage(pkgname)
+			}
 		}
 	default:
 		lintFiles(flag.Args()...)
@@ -91,7 +98,7 @@ func lintDir(dirname string) {
 }
 
 func lintPackage(pkgname string) {
-	pkg, err := build.Import(pkgname, "", 0)
+	pkg, err := build.Import(pkgname, ".", 0)
 	lintImportedPackage(pkg, err)
 }
 
