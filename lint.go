@@ -157,6 +157,7 @@ func (f *file) lint() {
 	f.lintIncDec()
 	f.lintMake()
 	f.lintErrorReturn()
+	f.lintSwitchCases()
 }
 
 type link string
@@ -1172,6 +1173,58 @@ func (f *file) lintErrorReturn() {
 		}
 		return true
 	})
+}
+
+// lintSwitchCases examines case statements in a switch to flag suspicious (lack of) fallthrough
+// and if a statement does not appear to do anything.
+func (f *file) lintSwitchCases() {
+
+	re := regexp.MustCompile("(\n|\t|  )")
+
+	f.walk(func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		if sw, ok := n.(*ast.SwitchStmt); ok {
+			for idx, x := range sw.Body.List {
+				if cl, ok := x.(*ast.CaseClause); ok {
+					didWork := f.caseClauseDidWork(cl)
+					if !didWork && cl.Body != nil || !didWork && idx == len(sw.Body.List)-1 { // special case the last clause in a switch
+						f.errorf(cl, 0.8, category("case"), `'%v' statement does no work`, re.ReplaceAllString(f.render(cl), ""))
+					} else if !didWork {
+						f.errorf(cl, 0.9, category("case"), ` ''%v' are you missing a fallthrough?`, re.ReplaceAllString(f.render(cl), ""))
+					}
+				}
+			}
+		}
+		return true
+	})
+}
+
+func (f *file) caseClauseDidWork(fn ast.Node) bool {
+	var didWork bool
+
+	ast.Walk(walker(
+		func(n ast.Node) bool {
+			if n == nil {
+				return true
+			}
+			switch n.(type) {
+			case
+				*ast.ReturnStmt,
+				*ast.ExprStmt,
+				*ast.AssignStmt,
+				*ast.BranchStmt,
+				*ast.SendStmt,
+				*ast.IncDecStmt,
+				*ast.GoStmt,
+				*ast.CallExpr:
+				didWork = true
+			}
+			return true
+		}), fn)
+
+	return didWork
 }
 
 func receiverType(fn *ast.FuncDecl) string {
