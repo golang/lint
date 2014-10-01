@@ -614,6 +614,12 @@ func lintName(name string) (should string) {
 			for i+n+1 < len(runes) && runes[i+n+1] == '_' {
 				n++
 			}
+
+			// Leave at most one underscore if the underscore is between two digits
+			if i+n+1 < len(runes) && unicode.IsDigit(runes[i]) && unicode.IsDigit(runes[i+n+1]) {
+				n--
+			}
+
 			copy(runes[i+1:], runes[i+n+1:])
 			runes = runes[:len(runes)-n]
 		} else if unicode.IsLower(runes[i]) && !unicode.IsLower(runes[i+1]) {
