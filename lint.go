@@ -15,6 +15,7 @@ import (
 	"go/printer"
 	"go/token"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -45,6 +46,27 @@ func (p *Problem) String() string {
 		return p.Text + "\n\n" + p.Link
 	}
 	return p.Text
+}
+
+type byPosition []Problem
+
+func (p byPosition) Len() int      { return len(p) }
+func (p byPosition) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+
+func (p byPosition) Less(i, j int) bool {
+	pi, pj := p[i].Position, p[j].Position
+
+	if pi.Filename != pj.Filename {
+		return pi.Filename < pj.Filename
+	}
+	if pi.Line != pj.Line {
+		return pi.Line < pj.Line
+	}
+	if pi.Column != pj.Column {
+		return pi.Column < pj.Column
+	}
+
+	return p[i].Text < p[j].Text
 }
 
 // Lint lints src.
@@ -126,7 +148,9 @@ func (p *pkg) lint() []Problem {
 	for _, f := range p.files {
 		f.lint()
 	}
-	// TODO(dsymonds): sort?
+
+	sort.Sort(byPosition(p.problems))
+
 	return p.problems
 }
 
