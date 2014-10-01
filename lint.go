@@ -463,7 +463,7 @@ var allCapsRE = regexp.MustCompile(`^[A-Z0-9_]+$`)
 // It complains if any use underscores or incorrect known initialisms.
 func (f *file) lintNames() {
 	// Package names need slightly different handling than other names.
-	if strings.Contains(f.f.Name.Name, "_") && !strings.HasSuffix(f.f.Name.Name, "_test") {
+	if c := strings.Count(f.f.Name.Name, "_"); c > 1 || (c == 1 && !strings.HasSuffix(f.f.Name.Name, "_test")) {
 		f.errorf(f.f, 1, link("http://golang.org/doc/effective_go.html#package-names"), category("naming"), "don't use an underscore in package name")
 	}
 
