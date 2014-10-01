@@ -71,3 +71,17 @@ type i interface {
 
 	F(foo_bar int) // MATCH /foo_bar.*fooBar/
 }
+
+// All okay; underscore between digits
+const case1_1 = 1
+
+type case2_1 struct {
+	case2_2 int
+}
+
+func case3_1(case3_2 int) (case3_3 string) {
+	case3_4 := 4
+	_ = case3_4
+
+	return ""
+}

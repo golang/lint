@@ -187,6 +187,10 @@ func TestLintName(t *testing.T) {
 		{"a__b", "aB"},
 		{"a___b", "aB"},
 		{"Rpc1150", "RPC1150"},
+		{"case3_1", "case3_1"},
+		{"case3__1", "case3_1"},
+		{"IEEE802_16bit", "IEEE802_16bit"},
+		{"IEEE802_16Bit", "IEEE802_16Bit"},
 	}
 	for _, test := range tests {
 		got := lintName(test.name)
