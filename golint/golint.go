@@ -13,7 +13,9 @@ import (
 	"go/build"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/golang/lint"
@@ -69,7 +71,8 @@ func exists(filename string) bool {
 }
 
 func lintFiles(filenames ...string) {
-	files := make(map[string][]byte)
+	files := make(map[string]struct{})
+	pkgs := make(map[string]map[string][]byte)
 	for _, filename := range filenames {
 		if _, ok := files[filename]; ok {
 			continue
@@ -80,18 +83,38 @@ func lintFiles(filenames ...string) {
 			fmt.Fprintln(os.Stderr, err)
 			continue
 		}
-		files[filename] = src
+		files[filename] = struct{}{}
+
+		pkgName := path.Dir(filename)
+
+		pkg, ok := pkgs[pkgName]
+		if !ok {
+			pkg = make(map[string][]byte)
+
+			pkgs[pkgName] = pkg
+		}
+
+		pkg[filename] = src
 	}
 
-	l := new(lint.Linter)
-	ps, err := l.LintFiles(files)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return
+	pkgsNames := make([]string, 0, len(pkgs))
+	for n := range pkgs {
+		pkgsNames = append(pkgsNames, n)
 	}
-	for _, p := range ps {
-		if p.Confidence >= *minConfidence {
-			fmt.Printf("%v: %s\n", p.Position, p.Text)
+	sort.Strings(pkgsNames)
+
+	l := new(lint.Linter)
+
+	for _, n := range pkgsNames {
+		ps, err := l.LintFiles(pkgs[n])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			return
+		}
+		for _, p := range ps {
+			if p.Confidence >= *minConfidence {
+				fmt.Printf("%v: %s\n", p.Position, p.Text)
+			}
 		}
 	}
 }
