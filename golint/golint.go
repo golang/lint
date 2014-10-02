@@ -11,6 +11,8 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"path"
@@ -86,6 +88,17 @@ func lintFiles(filenames ...string) {
 		files[filename] = struct{}{}
 
 		pkgName := path.Dir(filename)
+		if strings.HasSuffix(filename, "_test.go") {
+			f, err := parser.ParseFile(token.NewFileSet(), "", src, 0)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+				return
+			}
+
+			if n := f.Name.Name; strings.HasSuffix(n, "_test") {
+				pkgName = pkgName + " " + n
+			}
+		}
 
 		pkg, ok := pkgs[pkgName]
 		if !ok {
