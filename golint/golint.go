@@ -71,6 +71,10 @@ func exists(filename string) bool {
 func lintFiles(filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
+		if _, ok := files[filename]; ok {
+			continue
+		}
+
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
