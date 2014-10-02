@@ -120,7 +120,21 @@ func lintImportedPackage(pkg *build.Package, err error) {
 			files[i] = filepath.Join(pkg.Dir, f)
 		}
 	}
-	// TODO(dsymonds): Do foo_test too (pkg.XTestGoFiles)
 
 	lintFiles(files...)
+
+	if len(pkg.XTestGoFiles) > 0 {
+		files := pkg.XTestGoFiles
+		joinDirWithFilenames(pkg.Dir, files)
+
+		lintFiles(files...)
+	}
+}
+
+func joinDirWithFilenames(dir string, files []string) {
+	if dir != "." {
+		for i, f := range files {
+			files[i] = filepath.Join(dir, f)
+		}
+	}
 }
