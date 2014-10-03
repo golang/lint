@@ -9,6 +9,7 @@ package lint
 import (
 	"bytes"
 	"flag"
+	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -17,6 +18,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"code.google.com/p/go.tools/go/types"
 )
 
 var lintMatch = flag.String("lint.match", "", "restrict testdata matches to this pattern")
@@ -192,6 +195,44 @@ func TestLintName(t *testing.T) {
 		got := lintName(test.name)
 		if got != test.want {
 			t.Errorf("lintName(%q) = %q, want %q", test.name, got, test.want)
+		}
+	}
+}
+
+func TestExportedType(t *testing.T) {
+	tests := []struct {
+		typString string
+		exp       bool
+	}{
+		{"int", true},
+		{"string", false}, // references the shadowed builtin "string"
+		{"T", true},
+		{"t", false},
+		{"*T", true},
+		{"*t", false},
+		{"map[int]complex128", true},
+	}
+	for _, test := range tests {
+		src := `package foo; type T int; type t int; type string struct{}`
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, "foo.go", src, 0)
+		if err != nil {
+			t.Fatalf("Parsing %q: %v", src, err)
+		}
+		// use the package name as package path
+		pkg, err := types.Check(file.Name.Name, fset, []*ast.File{file})
+		if err != nil {
+			t.Fatalf("Type checking %q: %v", src, err)
+		}
+		// Use the first child scope of the package, which will be the file scope.
+		scope := pkg.Scope().Child(0)
+		typ, _, err := types.Eval(test.typString, pkg, scope)
+		if err != nil {
+			t.Errorf("types.Eval(%q): %v", test.typString, err)
+			continue
+		}
+		if got := exportedType(typ); got != test.exp {
+			t.Errorf("exportedType(%v) = %t, want %t", typ, got, test.exp)
 		}
 	}
 }

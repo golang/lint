@@ -181,6 +181,7 @@ func (f *file) lint() {
 	f.lintIncDec()
 	f.lintMake()
 	f.lintErrorReturn()
+	f.lintUnexportedReturn()
 }
 
 type link string
@@ -1196,6 +1197,61 @@ func (f *file) lintErrorReturn() {
 		}
 		return true
 	})
+}
+
+// lintUnexportedReturn examines exported function declarations.
+// It complains if any return an unexported type.
+func (f *file) lintUnexportedReturn() {
+	f.walk(func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok {
+			return true
+		}
+		if fn.Type.Results == nil {
+			return false
+		}
+		if !fn.Name.IsExported() {
+			return false
+		}
+		thing := "func"
+		if fn.Recv != nil && len(fn.Recv.List) > 0 {
+			thing = "method"
+			if !ast.IsExported(receiverType(fn)) {
+				// Don't report exported methods of unexported types,
+				// such as private implementations of sort.Interface.
+				return false
+			}
+		}
+		for _, ret := range fn.Type.Results.List {
+			typ := f.pkg.typeOf(ret.Type)
+			if exportedType(typ) {
+				continue
+			}
+			f.errorf(ret.Type, 0.8, "exported %s %s returns unexported type %s, which can be annoying to use",
+				thing, fn.Name.Name, typ)
+			break // only flag one
+		}
+		return false
+	})
+}
+
+// exportedType reports whether typ is an exported type.
+// It is imprecise, and will err on the side of returning true,
+// such as for composite types.
+func exportedType(typ types.Type) bool {
+	switch T := typ.(type) {
+	case *types.Named:
+		// Builtin types have no package.
+		return T.Obj().Pkg() == nil || T.Obj().Exported()
+	case *types.Map:
+		return exportedType(T.Key()) && exportedType(T.Elem())
+	case interface {
+		Elem() types.Type
+	}: // array, slice, pointer, chan
+		return exportedType(T.Elem())
+	}
+	// Be conservative about other types, such as struct, interface, etc.
+	return true
 }
 
 func receiverType(fn *ast.FuncDecl) string {
