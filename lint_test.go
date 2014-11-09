@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"code.google.com/p/go.tools/go/types"
+	"golang.org/x/tools/go/types"
 )
 
 var lintMatch = flag.String("lint.match", "", "restrict testdata matches to this pattern")
