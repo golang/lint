@@ -182,6 +182,7 @@ func (f *file) lint() {
 	f.lintMake()
 	f.lintErrorReturn()
 	f.lintUnexportedReturn()
+	f.lintTimeNames()
 }
 
 type link string
@@ -260,6 +261,15 @@ func (p *pkg) typeOf(expr ast.Expr) types.Type {
 		return nil
 	}
 	return p.typesInfo.TypeOf(expr)
+}
+
+func (p *pkg) isNamedType(typ types.Type, importPath, name string) bool {
+	n, ok := typ.(*types.Named)
+	if !ok {
+		return false
+	}
+	tn := n.Obj()
+	return tn != nil && tn.Pkg() != nil && tn.Pkg().Path() == importPath && tn.Name() == name
 }
 
 // scopeOf returns the tightest scope encompassing id.
@@ -1258,6 +1268,49 @@ func exportedType(typ types.Type) bool {
 	}
 	// Be conservative about other types, such as struct, interface, etc.
 	return true
+}
+
+// timeSuffixes is a list of name suffixes that imply a time unit.
+// This is not an exhaustive list.
+var timeSuffixes = []string{
+	"Sec", "Secs", "Seconds",
+	"Msec", "Msecs",
+	"Milli", "Millis", "Milliseconds",
+	"Usec", "Usecs", "Microseconds",
+	"MS", "Ms",
+}
+
+func (f *file) lintTimeNames() {
+	f.walk(func(node ast.Node) bool {
+		v, ok := node.(*ast.ValueSpec)
+		if !ok {
+			return true
+		}
+		for _, name := range v.Names {
+			origTyp := f.pkg.typeOf(name)
+			// Look for time.Duration or *time.Duration;
+			// the latter is common when using flag.Duration.
+			typ := origTyp
+			if pt, ok := typ.(*types.Pointer); ok {
+				typ = pt.Elem()
+			}
+			if !f.pkg.isNamedType(typ, "time", "Duration") {
+				continue
+			}
+			suffix := ""
+			for _, suf := range timeSuffixes {
+				if strings.HasSuffix(name.Name, suf) {
+					suffix = suf
+					break
+				}
+			}
+			if suffix == "" {
+				continue
+			}
+			f.errorf(v, 0.9, category("time"), "var %s is of type %v; don't use unit-specific suffix %q", name.Name, origTyp, suffix)
+		}
+		return true
+	})
 }
 
 func receiverType(fn *ast.FuncDecl) string {
