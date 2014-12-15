@@ -25,7 +25,7 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
-const styleGuideBase = "http://golang.org/s/comments"
+const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
 
 // A Linter lints Go source code.
 type Linter struct {
@@ -350,7 +350,7 @@ func (f *file) lintPackageComment() {
 		return
 	}
 
-	const ref = styleGuideBase + "#Package_Comments"
+	const ref = styleGuideBase + "#package-comments"
 	if f.f.Doc == nil {
 		f.errorf(f.f, 0.2, link(ref), category("comments"), "should have a package comment, unless it's in another file for this package")
 		return
@@ -405,14 +405,14 @@ func (f *file) lintImports() {
 	for i, is := range f.f.Imports {
 		_ = i
 		if is.Name != nil && is.Name.Name == "." && !f.isTest() {
-			f.errorf(is, 1, link(styleGuideBase+"#Import_Dot"), category("imports"), "should not use dot imports")
+			f.errorf(is, 1, link(styleGuideBase+"#import-dot"), category("imports"), "should not use dot imports")
 		}
 
 	}
 
 }
 
-const docCommentsLink = styleGuideBase + "#Doc_Comments"
+const docCommentsLink = styleGuideBase + "#doc-comments"
 
 // lintExported examines the exported names.
 // It complains if any required doc comments are missing,
@@ -485,12 +485,12 @@ func (f *file) lintNames() {
 
 		// Handle two common styles from other languages that don't belong in Go.
 		if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
-			f.errorf(id, 0.8, link(styleGuideBase+"#Mixed_Caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
+			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
 			return
 		}
 		if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
 			should := string(id.Name[1]+'a'-'A') + id.Name[2:]
-			f.errorf(id, 0.8, link(styleGuideBase+"#Mixed_Caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
+			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
 		}
 
 		should := lintName(id.Name)
@@ -501,7 +501,7 @@ func (f *file) lintNames() {
 			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
 			return
 		}
-		f.errorf(id, 0.8, link(styleGuideBase+"#Initialisms"), category("naming"), "%s %s should be %s", thing, id.Name, should)
+		f.errorf(id, 0.8, link(styleGuideBase+"#initialisms"), category("naming"), "%s %s should be %s", thing, id.Name, should)
 	}
 	checkList := func(fl *ast.FieldList, thing string) {
 		if fl == nil {
@@ -833,7 +833,7 @@ func (f *file) checkStutter(id *ast.Ident, thing string) {
 	// the it's starting a new word and thus this name stutters.
 	rem := name[len(pkg):]
 	if next, _ := utf8.DecodeRuneInString(rem); next == '_' || unicode.IsUpper(next) {
-		f.errorf(id, 0.8, link(styleGuideBase+"#Package_Names"), category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
+		f.errorf(id, 0.8, link(styleGuideBase+"#package-names"), category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
 	}
 }
 
@@ -958,7 +958,7 @@ func (f *file) lintElses() {
 			if shortDecl {
 				extra = " (move short variable declaration to its own line if necessary)"
 			}
-			f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#Indent_Error_Flow"), category("indent"), "if block ends with a return statement, so drop this else and outdent its block"+extra)
+			f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#indent-error-flow"), category("indent"), "if block ends with a return statement, so drop this else and outdent its block"+extra)
 		}
 		return true
 	})
@@ -1090,7 +1090,7 @@ func (f *file) lintErrorStrings() {
 		if isCap {
 			conf = 0.6
 		}
-		f.errorf(str, conf, link(styleGuideBase+"#Error_Strings"), category("errors"), msg)
+		f.errorf(str, conf, link(styleGuideBase+"#error-strings"), category("errors"), msg)
 		return true
 	})
 }
@@ -1115,7 +1115,7 @@ func (f *file) lintReceiverNames() {
 			return true
 		}
 		name := names[0].Name
-		const ref = styleGuideBase + "#Receiver_Names"
+		const ref = styleGuideBase + "#receiver-names"
 		if name == "_" {
 			f.errorf(n, 1, link(ref), category("naming"), `receiver name should not be an underscore`)
 			return true
