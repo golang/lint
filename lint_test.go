@@ -230,13 +230,13 @@ func TestExportedType(t *testing.T) {
 		}
 		// Use the first child scope of the package, which will be the file scope.
 		scope := pkg.Scope().Child(0)
-		typ, _, err := types.Eval(test.typString, pkg, scope)
+		tv, err := types.Eval(test.typString, pkg, scope)
 		if err != nil {
 			t.Errorf("types.Eval(%q): %v", test.typString, err)
 			continue
 		}
-		if got := exportedType(typ); got != test.exp {
-			t.Errorf("exportedType(%v) = %t, want %t", typ, got, test.exp)
+		if got := exportedType(tv.Type); got != test.exp {
+			t.Errorf("exportedType(%v) = %t, want %t", tv.Type, got, test.exp)
 		}
 	}
 }

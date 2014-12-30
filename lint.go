@@ -1398,11 +1398,11 @@ func (f *file) isUntypedConst(expr ast.Expr, scope *types.Scope) (defType string
 
 	// Re-evaluate expr outside of its context to see if it's untyped.
 	// (An expr evaluated within, for example, an assignment context will get the type of the LHS.)
-	typ, _, err := types.EvalNode(f.fset, expr, f.pkg.typesPkg, scope)
+	tv, err := types.EvalNode(f.fset, expr, f.pkg.typesPkg, scope)
 	if err != nil {
 		return "", false
 	}
-	if b, ok := typ.(*types.Basic); ok {
+	if b, ok := tv.Type.(*types.Basic); ok {
 		if dt, ok := basicTypeKinds[b.Kind()]; ok {
 			return dt, true
 		}
