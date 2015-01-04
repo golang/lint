@@ -351,12 +351,34 @@ func (f *file) lintPackageComment() {
 	}
 
 	const ref = styleGuideBase + "#package-comments"
+	prefix := "Package " + f.f.Name.Name + " "
+
+	// Look for a detached package comment.
+	// First, scan for the last comment that occurs before the "package" keyword.
+	var lastCG *ast.CommentGroup
+	for _, cg := range f.f.Comments {
+		if cg.Pos() > f.f.Package {
+			// Gone past "package" keyword.
+			break
+		}
+		lastCG = cg
+	}
+	if lastCG != nil && strings.HasPrefix(lastCG.Text(), prefix) {
+		endPos := f.fset.Position(lastCG.End())
+		pkgPos := f.fset.Position(f.f.Package)
+		if endPos.Line+1 < pkgPos.Line {
+			// There isn't a great place to anchor this error;
+			// the package statement seems as good as any.
+			f.errorf(f.f, 0.9, link(ref), category("comments"), "package comment is detached; there should be no blank lines between it and the package statement")
+			return
+		}
+	}
+
 	if f.f.Doc == nil {
 		f.errorf(f.f, 0.2, link(ref), category("comments"), "should have a package comment, unless it's in another file for this package")
 		return
 	}
 	s := f.f.Doc.Text()
-	prefix := "Package " + f.f.Name.Name + " "
 	if ts := strings.TrimLeft(s, " \t"); ts != s {
 		f.errorf(f.f.Doc, 1, link(ref), category("comments"), "package comment should not have leading space")
 		s = ts
