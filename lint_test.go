@@ -9,6 +9,7 @@ package lint
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -16,6 +17,7 @@ import (
 	"io/ioutil"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -114,23 +116,41 @@ func parseInstructions(t *testing.T, filename string, src []byte) []instruction 
 				continue
 			}
 			if strings.Contains(line, "MATCH") {
-				a, b := strings.Index(line, "/"), strings.LastIndex(line, "/")
-				if a == -1 || a == b {
-					t.Fatalf("Malformed match instruction %q at %v:%d", line, filename, ln)
-				}
-				pat := line[a+1 : b]
-				rx, err := regexp.Compile(pat)
+				rx, err := extractPattern(line)
 				if err != nil {
-					t.Fatalf("Bad match pattern %q at %v:%d: %v", pat, filename, ln, err)
+					t.Fatalf("At %v:%d: %v", filename, ln, err)
+				}
+				matchLine := ln
+				if i := strings.Index(line, "MATCH:"); i >= 0 {
+					// This is a match for a different line.
+					lns := strings.TrimPrefix(line[i:], "MATCH:")
+					lns = lns[:strings.Index(lns, " ")]
+					matchLine, err = strconv.Atoi(lns)
+					if err != nil {
+						t.Fatalf("Bad match line number %q at %v:%d: %v", lns, filename, ln, err)
+					}
 				}
 				ins = append(ins, instruction{
-					Line:  ln,
+					Line:  matchLine,
 					Match: rx,
 				})
 			}
 		}
 	}
 	return ins
+}
+
+func extractPattern(line string) (*regexp.Regexp, error) {
+	a, b := strings.Index(line, "/"), strings.LastIndex(line, "/")
+	if a == -1 || a == b {
+		return nil, fmt.Errorf("malformed match instruction %q", line)
+	}
+	pat := line[a+1 : b]
+	rx, err := regexp.Compile(pat)
+	if err != nil {
+		return nil, fmt.Errorf("bad match pattern %q: %v", pat, err)
+	}
+	return rx, nil
 }
 
 func render(fset *token.FileSet, x interface{}) string {

@@ -368,8 +368,15 @@ func (f *file) lintPackageComment() {
 		pkgPos := f.fset.Position(f.f.Package)
 		if endPos.Line+1 < pkgPos.Line {
 			// There isn't a great place to anchor this error;
-			// the package statement seems as good as any.
-			f.errorf(f.f, 0.9, link(ref), category("comments"), "package comment is detached; there should be no blank lines between it and the package statement")
+			// the start of the blank lines between the doc and the package statement
+			// is at least pointing at the location of the problem.
+			pos := token.Position{
+				Filename: endPos.Filename,
+				// Offset not set; it is non-trivial, and doesn't appear to be needed.
+				Line:   endPos.Line + 1,
+				Column: 1,
+			}
+			f.pkg.errorfAt(pos, 0.9, link(ref), category("comments"), "package comment is detached; there should be no blank lines between it and the package statement")
 			return
 		}
 	}

@@ -4,4 +4,6 @@
 Package foo is pretty sweet.
 */
 
-package foo // MATCH /package comment.*detached/
+package foo
+
+// MATCH:6 /package comment.*detached/
