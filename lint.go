@@ -724,6 +724,8 @@ var commonInitialisms = map[string]bool{
 	"UTF8":  true,
 	"VM":    true,
 	"XML":   true,
+	"XSRF":  true,
+	"XSS":   true,
 }
 
 // lintTypeDoc examines the doc comment on a type.
