@@ -35,26 +35,32 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	var foundErrors bool
+
 	switch flag.NArg() {
 	case 0:
-		lintDir(".")
+		foundErrors = lintDir(".")
 	case 1:
 		arg := flag.Arg(0)
 		if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-4]) {
 			for _, dirname := range allPackagesInFS(arg) {
-				lintDir(dirname)
+				foundErrors = foundErrors || lintDir(dirname)
 			}
 		} else if isDir(arg) {
-			lintDir(arg)
+			foundErrors = lintDir(arg)
 		} else if exists(arg) {
-			lintFiles(arg)
+			foundErrors = lintFiles(arg)
 		} else {
 			for _, pkgname := range importPaths([]string{arg}) {
-				lintPackage(pkgname)
+				foundErrors = foundErrors || lintPackage(pkgname)
 			}
 		}
 	default:
-		lintFiles(flag.Args()...)
+		foundErrors = lintFiles(flag.Args()...)
+	}
+
+	if foundErrors {
+		os.Exit(1)
 	}
 }
 
@@ -68,11 +74,12 @@ func exists(filename string) bool {
 	return err == nil
 }
 
-func lintFiles(filenames ...string) {
+func lintFiles(filenames ...string) (foundErrors bool) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
+			foundErrors = true
 			fmt.Fprintln(os.Stderr, err)
 			continue
 		}
@@ -82,32 +89,37 @@ func lintFiles(filenames ...string) {
 	l := new(lint.Linter)
 	ps, err := l.LintFiles(files)
 	if err != nil {
+		foundErrors = true
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
+			foundErrors = true
 			fmt.Printf("%v: %s\n", p.Position, p.Text)
 		}
 	}
+
+	return foundErrors
 }
 
-func lintDir(dirname string) {
+func lintDir(dirname string) bool {
 	pkg, err := build.ImportDir(dirname, 0)
-	lintImportedPackage(pkg, err)
+	return lintImportedPackage(pkg, err)
 }
 
-func lintPackage(pkgname string) {
+func lintPackage(pkgname string) bool {
 	pkg, err := build.Import(pkgname, ".", 0)
-	lintImportedPackage(pkg, err)
+	return lintImportedPackage(pkg, err)
 }
 
-func lintImportedPackage(pkg *build.Package, err error) {
+func lintImportedPackage(pkg *build.Package, err error) (foundErrors bool) {
 	if err != nil {
 		if _, nogo := err.(*build.NoGoError); nogo {
 			// Don't complain if the failure is due to no Go source files.
 			return
 		}
+		foundErrors = true
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
@@ -122,5 +134,5 @@ func lintImportedPackage(pkg *build.Package, err error) {
 	}
 	// TODO(dsymonds): Do foo_test too (pkg.XTestGoFiles)
 
-	lintFiles(files...)
+	return foundErrors || lintFiles(files...)
 }
