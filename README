@@ -1,7 +1,7 @@
 Golint is a linter for Go source code.
 
 To install, run
-  go get github.com/golang/lint/golint
+  go get -u github.com/golang/lint/golint
 
 Invoke golint with one or more filenames, a directory, or a package named
 by its import path. Golint uses the same import path syntax as the go
