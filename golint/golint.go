@@ -73,8 +73,8 @@ func exists(filename string) bool {
 }
 
 func lintFiles(filenames ...string) {
-	files := make(map[string]struct{})
-	pkgs := make(map[string]map[string][]byte)
+	files := make(map[string]struct{})         // Map of already loaded files
+	pkgs := make(map[string]map[string][]byte) // Map of packages each holding a map of their loaded files
 	for _, filename := range filenames {
 		if _, ok := files[filename]; ok {
 			continue
