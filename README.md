@@ -1,5 +1,7 @@
 Golint is a linter for Go source code.
 
+[![Build Status](https://travis-ci.org/golang/lint.svg?branch=master)](https://travis-ci.org/golang/lint)
+
 To install, run
   go get -u github.com/golang/lint/golint
 
