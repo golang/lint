@@ -887,6 +887,18 @@ var zeroLiteral = map[string]bool{
 	"0i":  true,
 }
 
+// knownWeakerTypes is a set of types that are commonly used to weaken var declarations.
+// A common form of var declarations that legitimately mentions an explicit LHS type
+// is where the LHS type is "weaker" than the exact RHS type, where "weaker" means an
+// interface compared to a concrete type, or an interface compared to a superset interface.
+// A canonical example is `var out io.Writer = os.Stdout`.
+// This is only used when type checking fails to determine the exact types.
+var knownWeakerTypes = map[string]bool{
+	"io.Reader":     true,
+	"io.Writer":     true,
+	"proto.Message": true,
+}
+
 // lintVarDecls examines variable declarations. It complains about declarations with
 // redundant LHS types that can be inferred from the RHS.
 func (f *file) lintVarDecls() {
@@ -932,7 +944,7 @@ func (f *file) lintVarDecls() {
 				return false
 			}
 
-			// The next two conditions are for suppressing the warning in situations
+			// The next three conditions are for suppressing the warning in situations
 			// where we were unable to typecheck.
 
 			// If the LHS type is an interface, don't warn, since it is probably a
@@ -946,6 +958,14 @@ func (f *file) lintVarDecls() {
 			if defType, ok := f.isUntypedConst(rhs, scope); ok && !isIdent(v.Type, defType) {
 				return false
 			}
+			// If the LHS is a known weaker type, and we couldn't type check both sides,
+			// don't warn.
+			if lhsTyp == nil || rhsTyp == nil {
+				if knownWeakerTypes[f.render(v.Type)] {
+					return false
+				}
+			}
+
 			f.errorf(v.Type, 0.8, category("type-inference"), "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
 			return false
 		}
