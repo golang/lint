@@ -1276,7 +1276,8 @@ func (f *file) lintUnexportedReturn() {
 			if exportedType(typ) {
 				continue
 			}
-			f.errorf(ret.Type, 0.8, "exported %s %s returns unexported type %s, which can be annoying to use",
+			f.errorf(ret.Type, 0.8, category("unexported-type-in-api"),
+				"exported %s %s returns unexported type %s, which can be annoying to use",
 				thing, fn.Name.Name, typ)
 			break // only flag one
 		}
