@@ -1038,8 +1038,9 @@ func (f *file) lintRanges() {
 	})
 }
 
-// lintErrorf examines errors.New calls. It complains if its only argument is an fmt.Sprintf invocation.
+// lintErrorf examines errors.New and testing.Error calls. It complains if their only arguments are fmt.Sprintf invocations.
 func (f *file) lintErrorf() {
+	// error.New
 	f.walk(func(node ast.Node) bool {
 		ce, ok := node.(*ast.CallExpr)
 		if !ok {
@@ -1054,6 +1055,33 @@ func (f *file) lintErrorf() {
 			return true
 		}
 		f.errorf(node, 1, category("errors"), "should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)")
+		return true
+	})
+
+	// testing.Error
+	testingTName := ""
+	f.walk(func(node ast.Node) bool {
+		switch ce := node.(type) {
+		case *ast.FuncDecl:
+			name := ce.Name.Name
+			if strings.HasPrefix(name, "Test") {
+				for _, field := range ce.Type.Params.List {
+					if f.render(field.Type) == "*testing.T" && len(field.Names) > 0 {
+						testingTName = field.Names[0].Name
+					}
+				}
+			}
+		case *ast.CallExpr:
+			if !isPkgDot(ce.Fun, testingTName, "Error") || len(ce.Args) != 1 {
+				return true
+			}
+			arg := ce.Args[0]
+			ce, ok := arg.(*ast.CallExpr)
+			if !ok || !isPkgDot(ce.Fun, "fmt", "Sprintf") {
+				return true
+			}
+			f.errorf(node, 1, category("errors"), fmt.Sprintf("should replace %s.Error(fmt.Sprintf(...)) with %s.Errorf(...)", testingTName, testingTName))
+		}
 		return true
 	})
 }
@@ -1418,6 +1446,11 @@ func isIdent(expr ast.Expr, ident string) bool {
 func isBlank(id *ast.Ident) bool { return id != nil && id.Name == "_" }
 
 func isPkgDot(expr ast.Expr, pkg, name string) bool {
+	sel, ok := expr.(*ast.SelectorExpr)
+	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
+}
+
+func isTypeDot(expr ast.Expr, pkg, name string) bool {
 	sel, ok := expr.(*ast.SelectorExpr)
 	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
 }
