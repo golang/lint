@@ -1042,13 +1042,13 @@ func (f *file) lintRanges() {
 func (f *file) lintErrorf() {
 	f.walk(func(node ast.Node) bool {
 		ce, ok := node.(*ast.CallExpr)
-		if !ok {
+		if !ok || len(ce.Args) != 1 {
 			return true
 		}
 		isErrorsNew := isPkgDot(ce.Fun, "errors", "New")
 		se, ok := ce.Fun.(*ast.SelectorExpr)
 		isTestingError := ok && se.Sel.Name == "Error" && f.pkg.typeOf(se.X).String() == "*testing.T"
-		if !(isErrorsNew || isTestingError) || len(ce.Args) != 1 {
+		if !(isErrorsNew || isTestingError) {
 			return true
 		}
 		arg := ce.Args[0]
