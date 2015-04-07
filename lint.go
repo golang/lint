@@ -1038,38 +1038,29 @@ func (f *file) lintRanges() {
 	})
 }
 
-// lintErrorf examines errors.New and testing.Error calls. It complains if their only arguments are fmt.Sprintf invocations.
+// lintErrorf examines errors.New and testing.Error calls. It complains if its only argument is an fmt.Sprintf invocation.
 func (f *file) lintErrorf() {
-	testingTName := ""
 	f.walk(func(node ast.Node) bool {
-		switch ce := node.(type) {
-		case *ast.FuncDecl:
-			name := ce.Name.Name
-			if strings.HasPrefix(name, "Test") {
-				for _, field := range ce.Type.Params.List {
-					if f.render(field.Type) == "*testing.T" && len(field.Names) > 0 {
-						testingTName = field.Names[0].Name
-					}
-				}
-			}
-
-		case *ast.CallExpr:
-			isErrorsNew := isPkgDot(ce.Fun, "errors", "New")
-			isTestingError := isPkgDot(ce.Fun, testingTName, "Error")
-			if !(isErrorsNew || isTestingError) || len(ce.Args) != 1 {
-				return true
-			}
-			arg := ce.Args[0]
-			ce, ok := arg.(*ast.CallExpr)
-			if !ok || !isPkgDot(ce.Fun, "fmt", "Sprintf") {
-				return true
-			}
-			err := "should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)"
-			if isTestingError {
-				err = fmt.Sprintf("should replace %s.Error(fmt.Sprintf(...)) with %s.Errorf(...)", testingTName, testingTName)
-			}
-			f.errorf(node, 1, category("errors"), err)
+		ce, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
 		}
+		isErrorsNew := isPkgDot(ce.Fun, "errors", "New")
+		se, ok := ce.Fun.(*ast.SelectorExpr)
+		isTestingError := ok && se.Sel.Name == "Error" && f.pkg.typeOf(se.X).String() == "*testing.T"
+		if !(isErrorsNew || isTestingError) || len(ce.Args) != 1 {
+			return true
+		}
+		arg := ce.Args[0]
+		ce, ok = arg.(*ast.CallExpr)
+		if !ok || !isPkgDot(ce.Fun, "fmt", "Sprintf") {
+			return true
+		}
+		errorfPrefix := "fmt"
+		if isTestingError {
+			errorfPrefix = f.render(se.X)
+		}
+		f.errorf(node, 1, category("errors"), "should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)", f.render(se), errorfPrefix)
 		return true
 	})
 }
