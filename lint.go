@@ -1046,8 +1046,13 @@ func (f *file) lintErrorf() {
 			return true
 		}
 		isErrorsNew := isPkgDot(ce.Fun, "errors", "New")
+		var isTestingError bool
 		se, ok := ce.Fun.(*ast.SelectorExpr)
-		isTestingError := ok && se.Sel.Name == "Error" && f.pkg.typeOf(se.X).String() == "*testing.T"
+		if ok && se.Sel.Name == "Error" {
+			if typ := f.pkg.typeOf(se.X); typ != nil {
+				isTestingError = typ.String() == "*testing.T"
+			}
+		}
 		if !isErrorsNew && !isTestingError {
 			return true
 		}
