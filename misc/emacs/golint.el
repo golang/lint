@@ -43,8 +43,10 @@
 (defun golint ()
   "Run golint on the current file and populate the fix list. Pressing C-x ` will jump directly to the line in your code which caused the first message."
   (interactive)
-  (compilation-start (concat "golint " buffer-file-name)
-                     'golint-mode))
+  (compilation-start
+   (mapconcat #'shell-quote-argument
+              (list "golint" (expand-file-name buffer-file-name)) " ")
+   'golint-mode))
 
 (provide 'golint)
 
