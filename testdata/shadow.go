@@ -3,9 +3,12 @@
 // Package foo ...
 package foo
 
+import "math"
+
 func f(x int) bool {
-	y := 7
+	y := math.Sin(5)
 	err := "test"
+	math := "duck" // MATCH /shadowing variable - math/
 	if x > 10 {
 		x := 7 // MATCH /shadowing variable - x/
 		y := 7 // MATCH /shadowing variable - y/
