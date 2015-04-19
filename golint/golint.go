@@ -20,6 +20,7 @@ import (
 )
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
+var shadowIgnore = flag.String("shadow_ignore", "*", "disables warning about shadowing of certain variables according to a RegExp. \"^.\" warns on everything.")
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -80,6 +81,7 @@ func lintFiles(filenames ...string) {
 	}
 
 	l := new(lint.Linter)
+	l.ShadowIgnore = *shadowIgnore
 	ps, err := l.LintFiles(files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
