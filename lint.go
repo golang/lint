@@ -29,6 +29,7 @@ const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
 
 // A Linter lints Go source code.
 type Linter struct {
+	ShadowIgnore string
 }
 
 // Problem represents a problem in some source code.
@@ -81,8 +82,9 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 		return nil, nil
 	}
 	pkg := &pkg{
-		fset:  token.NewFileSet(),
-		files: make(map[string]*file),
+		fset:    token.NewFileSet(),
+		files:   make(map[string]*file),
+		options: l,
 	}
 	var pkgName string
 	for filename, src := range files {
@@ -110,6 +112,8 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 type pkg struct {
 	fset  *token.FileSet
 	files map[string]*file
+
+	options *Linter
 
 	typesPkg  *types.Package
 	typesInfo *types.Info
@@ -178,6 +182,7 @@ func (f *file) lint() {
 	f.lintErrors()
 	f.lintErrorStrings()
 	f.lintReceiverNames()
+	f.lintShadowing()
 	f.lintIncDec()
 	f.lintMake()
 	f.lintErrorReturn()
@@ -261,6 +266,13 @@ func (p *pkg) typeOf(expr ast.Expr) types.Type {
 		return nil
 	}
 	return p.typesInfo.TypeOf(expr)
+}
+
+func (p *pkg) objectOf(id *ast.Ident) types.Object {
+	if p.typesInfo == nil {
+		return nil
+	}
+	return p.typesInfo.ObjectOf(id)
 }
 
 func (p *pkg) isNamedType(typ types.Type, importPath, name string) bool {
@@ -1195,6 +1207,44 @@ func (f *file) lintReceiverNames() {
 			return true
 		}
 		typeReceiver[recv] = name
+		return true
+	})
+}
+
+// lintShadowing examines all declared variables and complains if a variable is shadowed
+func (f *file) lintShadowing() {
+	exp := regexp.MustCompile(f.pkg.options.ShadowIgnore)
+	f.walk(func(node ast.Node) bool {
+		var idents []*ast.Ident
+		switch stmt := node.(type) {
+		case *ast.AssignStmt:
+			if stmt.Tok != token.DEFINE {
+				return true
+			}
+			for _, lhsStmt := range stmt.Lhs {
+				ident, ok := lhsStmt.(*ast.Ident)
+				if ok {
+					idents = append(idents, ident)
+				}
+			}
+		case *ast.Field:
+			idents = stmt.Names
+		}
+		for _, ident := range idents {
+			name := f.render(ident)
+			if exp.MatchString(name) {
+				continue
+			}
+			typ := f.pkg.objectOf(ident)
+			if typ == nil || typ.Parent() == nil || typ.Parent().Parent() == nil {
+				continue
+			}
+			_, obj := typ.Parent().Parent().LookupParent(name)
+			if obj == nil {
+				continue
+			}
+			f.errorf(node, 1, category("errors"), "shadowing variable - %s", name)
+		}
 		return true
 	})
 }
