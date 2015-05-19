@@ -35,6 +35,9 @@ or other knobs to suppress specific warnings, so do not expect or require
 code to be completely "lint-free".
 In short, this tool is not, and will never be, trustworthy enough for its
 suggestions to be enforced automatically, for example as part of a build process.
+Golint makes suggestions for many of the mechanically checkable items listed in
+[Effective Go](https://golang.org/doc/effective_go.html) and the
+[CodeReviewComments wiki page](golang.org/wiki/CodeReviewComments).
 
 If you find an established style that is frequently violated, and which
 you think golint could statically check,
