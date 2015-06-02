@@ -11,7 +11,7 @@ import (
 
 func f(x int) error {
 	if x > 10 {
-		return errors.New(fmt.Sprintf("something %d", x)) // MATCH /should replace.*errors\.New\(fmt\.Sprintf\(\.\.\.\)\).*fmt\.Errorf\(\.\.\.\)/
+		return errors.New(fmt.Sprintf("something %d", x)) // MATCH /should replace.*errors\.New\(fmt\.Sprintf\(\.\.\.\)\).*fmt\.Errorf\(\.\.\.\)/ -> `		return fmt.Errorf("something %d", x)`
 	}
 	if x > 5 {
 		return errors.New(g("blah")) // ok

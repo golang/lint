@@ -1042,12 +1042,7 @@ func (f *file) lintRanges() {
 
 		newRS := *rs // shallow copy
 		newRS.Value = nil
-		line := f.render(&newRS)
-		if i := strings.Index(line, "\n"); i >= 0 {
-			line = line[:i]
-		}
-		line = f.indentOf(rs) + line
-		p.ReplacementLine = line
+		p.ReplacementLine = f.firstLineOf(&newRS, rs)
 
 		return true
 	})
@@ -1080,7 +1075,13 @@ func (f *file) lintErrorf() {
 		if isTestingError {
 			errorfPrefix = f.render(se.X)
 		}
-		f.errorf(node, 1, category("errors"), "should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)", f.render(se), errorfPrefix)
+		p := f.errorf(node, 1, category("errors"), "should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)", f.render(se), errorfPrefix)
+
+		m := f.srcLineWithMatch(ce, `^(.*)`+f.render(se)+`\(fmt\.Sprintf\((.*)\)\)(.*)$`)
+		if m != nil {
+			p.ReplacementLine = m[1] + errorfPrefix + ".Errorf(" + m[2] + ")" + m[3]
+		}
+
 		return true
 	})
 }
@@ -1488,6 +1489,16 @@ func (f *file) isUntypedConst(expr ast.Expr) (defType string, ok bool) {
 	return "", false
 }
 
+// firstLineOf renders the given node and returns its first line.
+// It will also match the indentation of another node.
+func (f *file) firstLineOf(node, match ast.Node) string {
+	line := f.render(node)
+	if i := strings.Index(line, "\n"); i >= 0 {
+		line = line[:i]
+	}
+	return f.indentOf(match) + line
+}
+
 func (f *file) indentOf(node ast.Node) string {
 	line := srcLine(f.src, f.fset.Position(node.Pos()))
 	for i, r := range line {
@@ -1498,6 +1509,13 @@ func (f *file) indentOf(node ast.Node) string {
 		}
 	}
 	return line // unusual or empty line
+}
+
+func (f *file) srcLineWithMatch(node ast.Node, pattern string) (m []string) {
+	line := srcLine(f.src, f.fset.Position(node.Pos()))
+	line = strings.TrimSuffix(line, "\n")
+	rx := regexp.MustCompile(pattern)
+	return rx.FindStringSubmatch(line)
 }
 
 // srcLine returns the complete line at p, including the terminating newline.

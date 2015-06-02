@@ -71,8 +71,15 @@ func TestAll(t *testing.T) {
 				}
 				if in.Match.MatchString(p.Text) {
 					// check replacement if we are expecting one
-					if in.Replacement != "" && p.ReplacementLine != in.Replacement {
-						t.Errorf("Lint failed at %s:%d; got replacement %q, want %q", fi.Name(), in.Line, p.ReplacementLine, in.Replacement)
+					if in.Replacement != "" {
+						// ignore any inline comments, since that would be recursive
+						r := p.ReplacementLine
+						if i := strings.Index(r, " //"); i >= 0 {
+							r = r[:i]
+						}
+						if r != in.Replacement {
+							t.Errorf("Lint failed at %s:%d; got replacement %q, want %q", fi.Name(), in.Line, r, in.Replacement)
+						}
 					}
 
 					// remove this problem from ps
