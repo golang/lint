@@ -70,6 +70,11 @@ func TestAll(t *testing.T) {
 					continue
 				}
 				if in.Match.MatchString(p.Text) {
+					// check replacement if we are expecting one
+					if in.Replacement != "" && p.ReplacementLine != in.Replacement {
+						t.Errorf("Lint failed at %s:%d; got replacement %q, want %q", fi.Name(), in.Line, p.ReplacementLine, in.Replacement)
+					}
+
 					// remove this problem from ps
 					copy(ps[i:], ps[i+1:])
 					ps = ps[:len(ps)-1]
@@ -90,8 +95,9 @@ func TestAll(t *testing.T) {
 }
 
 type instruction struct {
-	Line  int            // the line number this applies to
-	Match *regexp.Regexp // what pattern to match
+	Line        int            // the line number this applies to
+	Match       *regexp.Regexp // what pattern to match
+	Replacement string         // what the suggested replacement line should be
 }
 
 // parseInstructions parses instructions from the comments in a Go source file.
@@ -130,9 +136,14 @@ func parseInstructions(t *testing.T, filename string, src []byte) []instruction 
 						t.Fatalf("Bad match line number %q at %v:%d: %v", lns, filename, ln, err)
 					}
 				}
+				var repl string
+				if r, ok := extractReplacement(line); ok {
+					repl = r
+				}
 				ins = append(ins, instruction{
-					Line:  matchLine,
-					Match: rx,
+					Line:        matchLine,
+					Match:       rx,
+					Replacement: repl,
 				})
 			}
 		}
@@ -151,6 +162,18 @@ func extractPattern(line string) (*regexp.Regexp, error) {
 		return nil, fmt.Errorf("bad match pattern %q: %v", pat, err)
 	}
 	return rx, nil
+}
+
+func extractReplacement(line string) (string, bool) {
+	// Look for this:  / -> `
+	// (the end of a match and start of a backtick string),
+	// and then the closing backtick.
+	const start = "/ -> `"
+	a, b := strings.Index(line, start), strings.LastIndex(line, "`")
+	if a < 0 || a > b {
+		return "", false
+	}
+	return line[a+len(start) : b], true
 }
 
 func render(fset *token.FileSet, x interface{}) string {

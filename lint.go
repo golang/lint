@@ -39,6 +39,10 @@ type Problem struct {
 	Confidence float64        // a value in (0,1] estimating the confidence in this problem's correctness
 	LineText   string         // the source line
 	Category   string         // a short name for the general category of the problem
+
+	// If the problem has a suggested fix (the minority case),
+	// ReplacementLine is a full replacement for the relevant line of the source file.
+	ReplacementLine string
 }
 
 func (p *Problem) String() string {
@@ -190,15 +194,16 @@ type category string
 
 // The variadic arguments may start with link and category types,
 // and must end with a format string and any arguments.
-func (f *file) errorf(n ast.Node, confidence float64, args ...interface{}) {
+// It returns the new Problem.
+func (f *file) errorf(n ast.Node, confidence float64, args ...interface{}) *Problem {
 	pos := f.fset.Position(n.Pos())
 	if pos.Filename == "" {
 		pos.Filename = f.filename
 	}
-	f.pkg.errorfAt(pos, confidence, args...)
+	return f.pkg.errorfAt(pos, confidence, args...)
 }
 
-func (p *pkg) errorfAt(pos token.Position, confidence float64, args ...interface{}) {
+func (p *pkg) errorfAt(pos token.Position, confidence float64, args ...interface{}) *Problem {
 	problem := Problem{
 		Position:   pos,
 		Confidence: confidence,
@@ -226,6 +231,7 @@ argLoop:
 	problem.Text = fmt.Sprintf(args[0].(string), args[1:]...)
 
 	p.problems = append(p.problems, problem)
+	return &p.problems[len(p.problems)-1]
 }
 
 var gcImporter = gcimporter.Import
@@ -1033,7 +1039,17 @@ func (f *file) lintRanges() {
 			return true
 		}
 
-		f.errorf(rs.Value, 1, category("range-loop"), "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
+		p := f.errorf(rs.Value, 1, category("range-loop"), "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
+
+		newRS := *rs // shallow copy
+		newRS.Value = nil
+		line := f.render(&newRS)
+		if i := strings.Index(line, "\n"); i >= 0 {
+			line = line[:i]
+		}
+		line = f.indentOf(rs) + line
+		p.ReplacementLine = line
+
 		return true
 	})
 }
@@ -1475,6 +1491,18 @@ func (f *file) isUntypedConst(expr ast.Expr, scope *types.Scope) (defType string
 	}
 
 	return "", false
+}
+
+func (f *file) indentOf(node ast.Node) string {
+	line := srcLine(f.src, f.fset.Position(node.Pos()))
+	for i, r := range line {
+		switch r {
+		case ' ', '\t':
+		default:
+			return line[:i]
+		}
+	}
+	return line // unusual or empty line
 }
 
 // srcLine returns the complete line at p, including the terminating newline.

@@ -7,7 +7,7 @@ func f() {
 	var m map[string]int
 
 	// with :=
-	for x, _ := range m { // MATCH /should omit 2nd value.*range.*equivalent.*for x := range/
+	for x, _ := range m { // MATCH /should omit 2nd value.*range.*equivalent.*for x := range/ -> `	for x := range m {`
 		_ = x
 	}
 	// with =
