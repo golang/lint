@@ -271,9 +271,7 @@ func TestExportedType(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Type checking %q: %v", src, err)
 		}
-		// Use the first child scope of the package, which will be the file scope.
-		scope := pkg.Scope().Child(0)
-		tv, err := types.Eval(test.typString, pkg, scope)
+		tv, err := types.Eval(fset, pkg, token.NoPos, test.typString)
 		if err != nil {
 			t.Errorf("types.Eval(%q): %v", test.typString, err)
 			continue

@@ -944,7 +944,6 @@ func (f *file) lintVarDecls() {
 			}
 			lhsTyp := f.pkg.typeOf(v.Type)
 			rhsTyp := f.pkg.typeOf(rhs)
-			scope := f.pkg.scopeOf(v.Names[0])
 			if lhsTyp != nil && rhsTyp != nil && !types.Identical(lhsTyp, rhsTyp) {
 				// Assignment to a different type is not redundant.
 				return false
@@ -961,7 +960,7 @@ func (f *file) lintVarDecls() {
 				return false
 			}
 			// If the RHS is an untyped const, only warn if the LHS type is its default type.
-			if defType, ok := f.isUntypedConst(rhs, scope); ok && !isIdent(v.Type, defType) {
+			if defType, ok := f.isUntypedConst(rhs); ok && !isIdent(v.Type, defType) {
 				return false
 			}
 			// If the LHS is a known weaker type, and we couldn't type check both sides,
@@ -1472,15 +1471,11 @@ var basicTypeKinds = map[types.BasicKind]string{
 // isUntypedConst reports whether expr is an untyped constant,
 // and indicates what its default type is.
 // scope may be nil.
-func (f *file) isUntypedConst(expr ast.Expr, scope *types.Scope) (defType string, ok bool) {
-	typ := f.pkg.typeOf(expr)
-	if typ == nil || scope == nil {
-		return "", false
-	}
-
+func (f *file) isUntypedConst(expr ast.Expr) (defType string, ok bool) {
 	// Re-evaluate expr outside of its context to see if it's untyped.
 	// (An expr evaluated within, for example, an assignment context will get the type of the LHS.)
-	tv, err := types.EvalNode(f.fset, expr, f.pkg.typesPkg, scope)
+	exprStr := f.render(expr)
+	tv, err := types.Eval(f.fset, f.pkg.typesPkg, expr.Pos(), exprStr)
 	if err != nil {
 		return "", false
 	}
