@@ -21,6 +21,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"golang.org/x/tools/go/exact"
 	"golang.org/x/tools/go/gcimporter"
 	"golang.org/x/tools/go/types"
 )
@@ -187,6 +188,7 @@ func (f *file) lint() {
 	f.lintErrorReturn()
 	f.lintUnexportedReturn()
 	f.lintTimeNames()
+	f.lintDurationUnits()
 }
 
 type link string
@@ -1392,6 +1394,70 @@ func (f *file) lintTimeNames() {
 			}
 			f.errorf(v, 0.9, category("time"), "var %s is of type %v; don't use unit-specific suffix %q", name.Name, origTyp, suffix)
 		}
+		return true
+	})
+}
+
+func (f *file) lintDurationUnits() {
+	f.walk(func(node ast.Node) bool {
+		e, ok := node.(ast.Expr)
+		if !ok {
+			return true
+		}
+
+		tv := f.pkg.typesInfo.Types[e]
+		if !f.pkg.isNamedType(tv.Type, "time", "Duration") {
+			return true
+		}
+		if tv.Value == nil {
+			return true
+		}
+		// OK for 0 to be unitless; non-constants are OK.
+		if x, ok := exact.Int64Val(tv.Value); !ok || x == 0 {
+			return true
+		}
+
+		// e has a constant value. What matters now is how it was defined.
+		// Its definition might be spread across many expressions:
+		//
+		// const (
+		//   a = iota
+		//   b
+		//   c = b * time.Second
+		//   e = c * 10
+		// )
+		//
+		// Rather than attempt to reconstruct e's origins,
+		// just handle the common cases.
+		switch e.(type) {
+		default:
+			// Assume that any non-literal, non-call expression is ok.
+			// In particular, allow 3 * time.Second, which is an *ast.BinExpr.
+			// This means that we fail to flag cases like
+			// time.Duration(15) + time.Duration(30) and
+			// time.Sleep(x) where 'const x = 10'.
+			return false
+		case *ast.CallExpr:
+			// Descend into call expressions in order to catch time.Duration(15).
+			return true
+		case *ast.BasicLit:
+			// A basic literal cannot possibly use time package constants.
+		}
+
+		f.errorf(e, 0.8, category("time"), `time.Duration expression "%v" should use time package constants`, f.render(e))
+		// TODO: Generate a ReplacementLine with an appropriately sized unit.
+		// For example, 3e9 should become 3 * time.Second. The unit part is easy.
+		// The challenge is figuring out exactly what else is on the line
+		// and handling the case in which there are multiple expressions
+		// to replace on the same line.
+		// The latter opens up API questions. If there are multiple
+		// problems on the same line, should they all generate identical
+		// replacements, or one replacement per problem?
+		// The former would mean that this linter has to maintain state across
+		// expressions.
+		// Also, the test framework does not yet have a means to represent
+		// multiple matches or multiple replacements on a single line.
+
 		return true
 	})
 }
