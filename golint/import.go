@@ -3,8 +3,8 @@ package main
 /*
 
 This file holds a direct copy of the import path matching code of
-https://code.google.com/p/go/source/browse/src/cmd/go/main.go. It can be
-replaced when https://code.google.com/p/go/issues/detail?id=8768 is resolved.
+https://github.com/golang/go/blob/master/src/cmd/go/main.go. It can be
+replaced when https://golang.org/issue/8768 is resolved.
 
 */
 
