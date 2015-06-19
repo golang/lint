@@ -312,7 +312,7 @@ func (p *pkg) scanSortable() {
 	for _, f := range p.files {
 		f.walk(func(n ast.Node) bool {
 			fn, ok := n.(*ast.FuncDecl)
-			if !ok || fn.Recv == nil {
+			if !ok || fn.Recv == nil || len(fn.Recv.List) == 0 {
 				return true
 			}
 			// TODO(dsymonds): We could check the signature to be more precise.
@@ -780,7 +780,7 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 	}
 	kind := "function"
 	name := fn.Name.Name
-	if fn.Recv != nil {
+	if fn.Recv != nil && len(fn.Recv.List) > 0 {
 		// method
 		kind = "method"
 		recv := receiverType(fn)
@@ -1189,7 +1189,7 @@ func (f *file) lintReceiverNames() {
 	typeReceiver := map[string]string{}
 	f.walk(func(n ast.Node) bool {
 		fn, ok := n.(*ast.FuncDecl)
-		if !ok || fn.Recv == nil {
+		if !ok || fn.Recv == nil || len(fn.Recv.List) == 0 {
 			return true
 		}
 		names := fn.Recv.List[0].Names
