@@ -114,6 +114,7 @@ func lintImportedPackage(pkg *build.Package, err error) {
 
 	var files []string
 	files = append(files, pkg.GoFiles...)
+	files = append(files, pkg.CgoFiles...)
 	files = append(files, pkg.TestGoFiles...)
 	if pkg.Dir != "." {
 		for i, f := range files {
