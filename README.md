@@ -63,7 +63,7 @@ Running `:Lint` will run golint on the current file and populate the quickfix li
 
 Optionally, add this to your `~/.vimrc` to automatically run `golint` on `:w`
 
-    autocmd BufWritePost,FileWritePost *.go execute 'Lint' | cwindow
+    autocmd BufWritePost,FileWritePost *.go execute 'GoLint' | cwindow
 
 
 ## Emacs
