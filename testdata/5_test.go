@@ -13,5 +13,8 @@ func TestSomething(t *testing.T) {
 func TestSomething_suffix(t *testing.T) {
 }
 
-func ExampleBuffer_reader() {
-}
+type Buffer struct{}
+
+func (Buffer) read() {}
+
+func ExampleBuffer_read() {}
