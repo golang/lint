@@ -187,6 +187,7 @@ func (f *file) lint() {
 	f.lintErrorReturn()
 	f.lintUnexportedReturn()
 	f.lintTimeNames()
+	f.lintExamples()
 }
 
 type link string
@@ -1391,6 +1392,102 @@ func (f *file) lintTimeNames() {
 				continue
 			}
 			f.errorf(v, 0.9, category("time"), "var %s is of type %v; don't use unit-specific suffix %q", name.Name, origTyp, suffix)
+		}
+		return true
+	})
+}
+
+func isExampleSuffix(s string) bool { return strings.ToLower(s) == s }
+
+func (f *file) lintExamples() {
+	if !f.isTest() {
+		return
+	}
+	var (
+		pkgName = f.f.Name.Name
+		scopes  = []*types.Scope{f.pkg.typesPkg.Scope()}
+		lookup  = func(name string) types.Object {
+			for _, scope := range scopes {
+				if o := scope.Lookup(name); o != nil {
+					return o
+				}
+			}
+			return nil
+		}
+	)
+	if strings.HasSuffix(pkgName, "_test") {
+		// Treat 'package foo_test' as an alias for 'package foo'.
+		var (
+			basePkg = strings.TrimSuffix(pkgName, "_test")
+			pkg     = f.pkg
+		)
+		for _, p := range pkg.typesPkg.Imports() {
+			if p.Name() == basePkg {
+				scopes = append(scopes, p.Scope())
+				break
+			}
+		}
+	}
+	f.walk(func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok {
+			// Ignore non-functions.
+			return true
+		}
+		var (
+			fnName = fn.Name.Name
+			report = func(msgs ...interface{}) {
+				msgs = append([]interface{}{category("examples")}, msgs...)
+				f.errorf(n, 1, msgs...)
+			}
+		)
+		if fn.Recv != nil || !strings.HasPrefix(fnName, "Example") {
+			// Ignore methods and types not named "Example".
+			return true
+		}
+		if params := fn.Type.Params; len(params.List) != 0 {
+			report("%s should be niladic", fnName)
+		}
+		if results := fn.Type.Results; results != nil && len(results.List) != 0 {
+			report("%s should return nothing", fnName)
+		}
+		if fnName == "Example" {
+			// Nothing more to do.
+			return true
+		}
+		var (
+			exName = strings.TrimPrefix(fnName, "Example")
+			elems  = strings.SplitN(exName, "_", 3)
+			ident  = elems[0]
+			obj    = lookup(ident)
+		)
+		if ident != "" && obj == nil {
+			// Check ExampleFoo and ExampleBadFoo.
+			report("%s refers to unknown identifier: %s", fnName, ident)
+			// Abort since obj is absent and no subsequent checks can be performed.
+			return true
+		}
+		if elemCnt := strings.Count(exName, "_"); elemCnt == 0 {
+			// Nothing more to do.
+			return true
+		}
+		mmbr := elems[1]
+		if ident == "" {
+			// Check Example_suffix and Example_BadSuffix.
+			if residual := strings.TrimPrefix(exName, "_"); !isExampleSuffix(residual) {
+				report("%s has malformed example suffix: %s", fnName, residual)
+			}
+			return true
+		}
+		if !isExampleSuffix(mmbr) {
+			// Check ExampleFoo_Method and ExampleFoo_BadMethod.
+			if obj, _, _ := types.LookupFieldOrMethod(obj.Type(), true, obj.Pkg(), mmbr); obj == nil {
+				report("%s refers to unknown field or method: %s.%s", fnName, ident, mmbr)
+			}
+		}
+		if len(elems) == 3 && !isExampleSuffix(elems[2]) {
+			// Check ExampleFoo_Method_suffix and ExampleFoo_Method_Badsuffix.
+			report("%s has malformed example suffix: %s", fnName, elems[2])
 		}
 		return true
 	})

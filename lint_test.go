@@ -24,7 +24,7 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
-var lintMatch = flag.String("lint.match", "", "restrict testdata matches to this pattern")
+var lintMatch = flag.String("lint.match", "^*.go$", "restrict testdata matches to this pattern")
 
 func TestAll(t *testing.T) {
 	l := new(Linter)
