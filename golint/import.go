@@ -20,8 +20,6 @@ import (
 	"strings"
 )
 
-var buildContext = build.Default
-
 var (
 	goroot       = filepath.Clean(runtime.GOROOT())
 	gorootSrcPkg = filepath.Join(goroot, "src/pkg")
@@ -29,7 +27,7 @@ var (
 
 // importPathsNoDotExpansion returns the import paths to use for the given
 // command line, but it does no ... expansion.
-func importPathsNoDotExpansion(args []string) []string {
+func importPathsNoDotExpansion(args []string, tags []string) []string {
 	if len(args) == 0 {
 		return []string{"."}
 	}
@@ -52,7 +50,7 @@ func importPathsNoDotExpansion(args []string) []string {
 			a = path.Clean(a)
 		}
 		if a == "all" || a == "std" {
-			out = append(out, allPackages(a)...)
+			out = append(out, allPackages(a, tags)...)
 			continue
 		}
 		out = append(out, a)
@@ -61,15 +59,15 @@ func importPathsNoDotExpansion(args []string) []string {
 }
 
 // importPaths returns the import paths to use for the given command line.
-func importPaths(args []string) []string {
-	args = importPathsNoDotExpansion(args)
+func importPaths(args []string, tags []string) []string {
+	args = importPathsNoDotExpansion(args, tags)
 	var out []string
 	for _, a := range args {
 		if strings.Contains(a, "...") {
 			if build.IsLocalImport(a) {
 				out = append(out, allPackagesInFS(a)...)
 			} else {
-				out = append(out, allPackages(a)...)
+				out = append(out, allPackages(a, tags)...)
 			}
 			continue
 		}
@@ -130,15 +128,20 @@ func treeCanMatchPattern(pattern string) func(name string) bool {
 // under the $GOPATH directories and $GOROOT matching pattern.
 // The pattern is either "all" (all packages), "std" (standard packages)
 // or a path including "...".
-func allPackages(pattern string) []string {
-	pkgs := matchPackages(pattern)
+func allPackages(pattern string, tags []string) []string {
+	pkgs := matchPackages(pattern, tags)
 	if len(pkgs) == 0 {
 		fmt.Fprintf(os.Stderr, "warning: %q matched no packages\n", pattern)
 	}
 	return pkgs
 }
 
-func matchPackages(pattern string) []string {
+func matchPackages(pattern string, tags []string) []string {
+	buildContext := build.Default
+	for _, tag := range tags {
+		buildContext.BuildTags = append(buildContext.BuildTags, tag)
+	}
+
 	match := func(string) bool { return true }
 	treeCanMatch := func(string) bool { return true }
 	if pattern != "all" && pattern != "std" {

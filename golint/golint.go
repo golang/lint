@@ -23,6 +23,11 @@ import (
 )
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
+var buildTags stringsFlag
+
+func init() {
+	flag.Var(&buildTags, "tags", "a list of build tags to consider satisfied during the build")
+}
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -38,7 +43,13 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	ctx := &build.Default
+	for _, tag := range buildTags {
+		ctx.BuildTags = append(ctx.BuildTags, tag)
+	}
+
 	conf := &loader.Config{
+		Build:      ctx,
 		ParserMode: parser.ParseComments,
 	}
 
@@ -56,7 +67,7 @@ func main() {
 		} else if exists(arg) {
 			conf.CreateFromFilenames(".", arg)
 		} else {
-			for _, pkgname := range importPaths([]string{arg}) {
+			for _, pkgname := range importPaths([]string{arg}, buildTags) {
 				conf.ImportWithTests(pkgname)
 			}
 		}
