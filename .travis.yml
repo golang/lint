@@ -1,5 +1,6 @@
 language: go
 
+# test versions for go provided by gimme
 go:
   - 1.4
   - 1.5
