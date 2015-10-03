@@ -1244,7 +1244,7 @@ func (f *file) lintIncDec() {
 	})
 }
 
-// lineMake examines statements that declare and initialize a variable with make.
+// lintMake examines statements that declare and initialize a variable with make.
 // It complains if they are constructing a zero element slice.
 func (f *file) lintMake() {
 	f.walk(func(n ast.Node) bool {
