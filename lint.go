@@ -564,12 +564,13 @@ func (f *file) lintNames() {
 				return true
 			}
 
-			check(v.Name, "func")
-
 			thing := "func"
 			if v.Recv != nil {
 				thing = "method"
 			}
+
+			check(v.Name, thing)
+
 			checkList(v.Type.Params, thing+" parameter")
 			checkList(v.Type.Results, thing+" result")
 		case *ast.GenDecl:
@@ -835,20 +836,31 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 		return
 	}
 
-	if vs.Doc == nil {
-		if gd.Doc == nil && !genDeclMissingComments[gd] {
-			block := ""
-			if kind == "const" && gd.Lparen.IsValid() {
-				block = " (or a comment on this block)"
-			}
-			f.errorf(vs, 1, link(docCommentsLink), category("comments"), "exported %s %s should have comment%s or be unexported", kind, name, block)
-			genDeclMissingComments[gd] = true
+	if vs.Doc == nil && gd.Doc == nil {
+		if genDeclMissingComments[gd] {
+			return
 		}
+		block := ""
+		if kind == "const" && gd.Lparen.IsValid() {
+			block = " (or a comment on this block)"
+		}
+		f.errorf(vs, 1, link(docCommentsLink), category("comments"), "exported %s %s should have comment%s or be unexported", kind, name, block)
+		genDeclMissingComments[gd] = true
 		return
 	}
+	// If this GenDecl has parens and a comment, we don't check its comment form.
+	if gd.Lparen.IsValid() && gd.Doc != nil {
+		return
+	}
+	// The relevant text to check will be on either vs.Doc or gd.Doc.
+	// Use vs.Doc preferentially.
+	doc := vs.Doc
+	if doc == nil {
+		doc = gd.Doc
+	}
 	prefix := name + " "
-	if !strings.HasPrefix(vs.Doc.Text(), prefix) {
-		f.errorf(vs.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+	if !strings.HasPrefix(doc.Text(), prefix) {
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
 	}
 }
 

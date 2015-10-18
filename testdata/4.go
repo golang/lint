@@ -32,3 +32,7 @@ var Y, Z int // MATCH /exported var Z.*own declaration/
 
 // Location should be okay, since the other var name is an underscore.
 var Location, _ = time.LoadLocation("Europe/Istanbul") // not Constantinople
+
+// this is improperly documented
+// MATCH /comment.*const.*Thing.*form.*"Thing ..."/
+const Thing = "wonderful"
