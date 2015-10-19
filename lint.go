@@ -14,8 +14,8 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"io/ioutil"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -52,12 +52,12 @@ func (p *Problem) String() string {
 	return p.Text
 }
 
-type byPosition []Problem
+type ByPosition []Problem
 
-func (p byPosition) Len() int      { return len(p) }
-func (p byPosition) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByPosition) Len() int      { return len(p) }
+func (p ByPosition) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-func (p byPosition) Less(i, j int) bool {
+func (p ByPosition) Less(i, j int) bool {
 	pi, pj := p[i].Position, p[j].Position
 
 	if pi.Filename != pj.Filename {
@@ -75,36 +75,41 @@ func (p byPosition) Less(i, j int) bool {
 
 // Lint lints src.
 func (l *Linter) Lint(filename string, src []byte) ([]Problem, error) {
-	return l.LintFiles(map[string][]byte{filename: src})
+	fset := token.NewFileSet()
+
+	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
+	if err != nil {
+		return nil, err
+	}
+
+	return l.LintFiles(fset, []*ast.File{f})
 }
 
 // LintFiles lints a set of files of a single package.
 // The argument is a map of filename to source.
-func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
+func (l *Linter) LintFiles(fset *token.FileSet, files []*ast.File) ([]Problem, error) {
 	if len(files) == 0 {
 		return nil, nil
 	}
 	pkg := &pkg{
-		fset:  token.NewFileSet(),
+		fset:  fset,
 		files: make(map[string]*file),
 	}
-	var pkgName string
-	for filename, src := range files {
-		f, err := parser.ParseFile(pkg.fset, filename, src, parser.ParseComments)
+	for _, f := range files {
+		fPos := fset.Position(f.Pos())
+
+		// TODO we have to load the file twice since we cannot access the original source for the loaded files via the loader, fileset, nor file
+		src, err := ioutil.ReadFile(fPos.Filename)
 		if err != nil {
 			return nil, err
 		}
-		if pkgName == "" {
-			pkgName = f.Name.Name
-		} else if f.Name.Name != pkgName {
-			return nil, fmt.Errorf("%s is in package %s, not %s", filename, f.Name.Name, pkgName)
-		}
-		pkg.files[filename] = &file{
+
+		pkg.files[fPos.Filename] = &file{
 			pkg:      pkg,
 			f:        f,
-			fset:     pkg.fset,
+			fset:     fset,
 			src:      src,
-			filename: filename,
+			filename: fPos.Filename,
 		}
 	}
 	return pkg.lint(), nil
@@ -152,8 +157,6 @@ func (p *pkg) lint() []Problem {
 	for _, f := range p.files {
 		f.lint()
 	}
-
-	sort.Sort(byPosition(p.problems))
 
 	return p.problems
 }

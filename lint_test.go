@@ -57,7 +57,7 @@ func TestAll(t *testing.T) {
 			continue
 		}
 
-		ps, err := l.Lint(fi.Name(), src)
+		ps, err := l.Lint(path.Join(baseDir, fi.Name()), src)
 		if err != nil {
 			t.Errorf("Linting %s: %v", fi.Name(), err)
 			continue
