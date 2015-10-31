@@ -19,6 +19,7 @@ import (
 	"github.com/golang/lint"
 )
 
+var ignore stringSlice
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 
 func usage() {
@@ -32,6 +33,7 @@ func usage() {
 }
 
 func main() {
+	flag.Var(&ignore, "ignore", "ignore file patterns")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -71,12 +73,23 @@ func exists(filename string) bool {
 func lintFiles(filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
+		ignoreFile, err := isIgnoreFilename(filename)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			continue
+		}
+		if ignoreFile {
+			continue
+		}
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			continue
 		}
 		files[filename] = src
+	}
+	if len(files) == 0 {
+		return
 	}
 
 	l := new(lint.Linter)
@@ -124,4 +137,28 @@ func lintImportedPackage(pkg *build.Package, err error) {
 	// TODO(dsymonds): Do foo_test too (pkg.XTestGoFiles)
 
 	lintFiles(files...)
+}
+
+func isIgnoreFilename(filename string) (bool, error) {
+	for _, ignorePattern := range ignore {
+		matched, err := filepath.Match(ignorePattern, filename)
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+type stringSlice []string
+
+func (s *stringSlice) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *stringSlice) Set(value string) error {
+	*s = append(*s, value)
+	return nil
 }
