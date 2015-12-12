@@ -1029,7 +1029,7 @@ func validType(T types.Type) bool {
 
 // lintElses examines else blocks. It complains about any else block whose if block ends in a return.
 func (f *file) lintElses() {
-	// We don't want to flag if { } else if { } else { } constructions.
+	// We don't want to flag if { } (else if { })+ else { } constructions.
 	// They will appear as an IfStmt whose Else field is also an IfStmt.
 	// Record such a node so we ignore it when we visit it.
 	ignore := make(map[*ast.IfStmt]bool)
@@ -1039,34 +1039,47 @@ func (f *file) lintElses() {
 		if !ok || ifStmt.Else == nil {
 			return true
 		}
+
 		if ignore[ifStmt] {
 			return true
 		}
-		if elseif, ok := ifStmt.Else.(*ast.IfStmt); ok {
-			ignore[elseif] = true
-			return true
-		}
-		if _, ok := ifStmt.Else.(*ast.BlockStmt); !ok {
-			// only care about elses without conditions
-			return true
-		}
+
+		outdentElse := true
+
+		// The else-block should only be outdented if the if block ends with a return statement.
 		if len(ifStmt.Body.List) == 0 {
+			outdentElse = false
+		} else if _, ok := ifStmt.Body.List[len(ifStmt.Body.List)-1].(*ast.ReturnStmt); !ok {
+			outdentElse = false
+		}
+
+		// Ignore the if and all else-ifs of this chain.
+		for {
+			ignore[ifStmt] = true
+
+			// If there is no else-if left we are done.
+			elseif, ok := ifStmt.Else.(*ast.IfStmt)
+			if !ok {
+				break
+			}
+
+			// Since there is an else-if we do not want to mark the dangling else at all.
+			outdentElse = false
+
+			ifStmt = elseif
+		}
+
+		if !outdentElse {
 			return true
 		}
-		shortDecl := false // does the if statement have a ":=" initialization statement?
-		if ifStmt.Init != nil {
-			if as, ok := ifStmt.Init.(*ast.AssignStmt); ok && as.Tok == token.DEFINE {
-				shortDecl = true
-			}
+
+		extra := ""
+		// Does the if statement have a ":=" initialization statement?
+		if as, ok := node.(*ast.IfStmt).Init.(*ast.AssignStmt); ok && as.Tok == token.DEFINE {
+			extra = " (move short variable declaration to its own line if necessary)"
 		}
-		lastStmt := ifStmt.Body.List[len(ifStmt.Body.List)-1]
-		if _, ok := lastStmt.(*ast.ReturnStmt); ok {
-			extra := ""
-			if shortDecl {
-				extra = " (move short variable declaration to its own line if necessary)"
-			}
-			f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#indent-error-flow"), category("indent"), "if block ends with a return statement, so drop this else and outdent its block"+extra)
-		}
+		f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#indent-error-flow"), category("indent"), "if block ends with a return statement, so drop this else and outdent its block"+extra)
+
 		return true
 	})
 }
