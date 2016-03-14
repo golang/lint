@@ -54,7 +54,8 @@ func f_it() { // MATCH /underscore.*func.*f_it/
 
 // Common styles in other languages that don't belong in Go.
 const (
-	CPP_CONST   = 1 // MATCH /ALL_CAPS.*CamelCase/
+	CPP_CONST   = 1 // MATCH /ALL_CAPS.*CPP_CONST.*CppConst/
+	MAX_TTL     = 7 // MATCH /ALL_CAPS.*MAX_TTL.*MaxTTL/
 	kLeadingKay = 2 // MATCH /k.*leadingKay/
 
 	HTML  = 3 // okay; no underscore
