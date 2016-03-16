@@ -9,7 +9,7 @@ Golint is a linter for Go source code.
 
 ## Installation
 
-    go get -u github.com/golang/lint/golint
+    go get -u github.com/leonardaustin/lint/golint
 
 ## Usage
 
