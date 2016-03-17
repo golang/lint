@@ -14,14 +14,13 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"go/types"
 	"io/ioutil"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
-
-	"golang.org/x/tools/go/types"
 )
 
 var lintMatch = flag.String("lint.match", "", "restrict testdata matches to this pattern")
@@ -274,7 +273,8 @@ func TestExportedType(t *testing.T) {
 			t.Fatalf("Parsing %q: %v", src, err)
 		}
 		// use the package name as package path
-		pkg, err := types.Check(file.Name.Name, fset, []*ast.File{file})
+		config := &types.Config{}
+		pkg, err := config.Check(file.Name.Name, fset, []*ast.File{file}, nil)
 		if err != nil {
 			t.Fatalf("Type checking %q: %v", src, err)
 		}
