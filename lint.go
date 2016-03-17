@@ -248,9 +248,7 @@ func (i importer) Import(path string) (*types.Package, error) {
 	return i.impFn(i.packages, path, "")
 }
 
-func (i importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
-	return i.impFn(i.packages, path, srcDir)
-}
+// (importer).ImportFrom is in lint16.go.
 
 func (p *pkg) typeCheck() error {
 	config := &types.Config{
