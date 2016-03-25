@@ -49,6 +49,7 @@ func f_it() { // MATCH /underscore.*func.*f_it/
 	select {
 	case qId := <-c: // MATCH /var.*qId.*qID/
 		_ = qId
+	default:
 	}
 }
 
