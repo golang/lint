@@ -1,0 +1,3 @@
+exclude {
+    categories = ["naming"]
+}
