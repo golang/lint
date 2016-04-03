@@ -25,4 +25,4 @@ build:
         name: go test
         cwd: $GOPATH/src/github.com/haruyama/golintx
         code: |
-          go test ./...
+          go test $(glide novendor)
