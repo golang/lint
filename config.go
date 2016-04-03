@@ -90,7 +90,7 @@ func excludeCategories(ps []Problem, cs []string) []Problem {
 }
 
 func (config *Config) initialismMap() map[string]bool {
-	if len(config.Initialisms) == 0 {
+	if config == nil || len(config.Initialisms) == 0 {
 		return commonInitialisms
 	}
 	m := make(map[string]bool, len(config.Initialisms))
