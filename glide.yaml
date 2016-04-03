@@ -3,3 +3,5 @@ import:
 - package: golang.org/x/tools
   subpackages:
   - go/gcimporter15
+- package: github.com/hashicorp/hcl
+- package: github.com/go-utils/uslice
