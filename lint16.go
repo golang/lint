@@ -6,7 +6,7 @@
 
 // +build go1.6
 
-package lint
+package golintx
 
 import "go/types"
 

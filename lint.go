@@ -5,7 +5,7 @@
 // https://developers.google.com/open-source/licenses/bsd.
 
 // Package lint contains a linter for Go source code.
-package lint
+package golintx
 
 import (
 	"bytes"
@@ -88,8 +88,19 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 		fset:  token.NewFileSet(),
 		files: make(map[string]*file),
 	}
+
 	var pkgName string
+	parseConfig := true
+	var config *Config
 	for filename, src := range files {
+		if parseConfig {
+			var err error
+			config, err = parseAndSetConfig(filename)
+			if err != nil {
+				return nil, err
+			}
+			parseConfig = false
+		}
 		f, err := parser.ParseFile(pkg.fset, filename, src, parser.ParseComments)
 		if err != nil {
 			return nil, err
@@ -107,7 +118,11 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 			filename: filename,
 		}
 	}
-	return pkg.lint(), nil
+	ps := pkg.lint()
+	if config != nil {
+		return excludeCategories(ps, config.Exclude.Categories), nil
+	}
+	return ps, nil
 }
 
 // pkg represents a package being linted.
