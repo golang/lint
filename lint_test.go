@@ -244,8 +244,54 @@ func TestLintName(t *testing.T) {
 		{"IEEE802_16bit", "IEEE802_16bit"},
 		{"IEEE802_16Bit", "IEEE802_16Bit"},
 	}
+	file := &file{}
 	for _, test := range tests {
-		got := lintName(test.name)
+		got := file.lintName(test.name)
+		if got != test.want {
+			t.Errorf("lintName(%q) = %q, want %q", test.name, got, test.want)
+		}
+	}
+}
+
+func TestLintNameWithConfig(t *testing.T) {
+	tests := []struct {
+		name, want string
+	}{
+		{"foo_bar", "fooBar"},
+		{"foo_bar_baz", "fooBarBaz"},
+		{"Foo_bar", "FooBar"},
+		{"foo_WiFi", "fooWiFi"},
+		{"id", "id"},
+		{"Id", "Id"},
+		{"foo_id", "fooId"},
+		{"fooId", "fooId"},
+		{"fooUid", "fooUid"},
+		{"idFoo", "idFoo"},
+		{"uidFoo", "uidFoo"},
+		{"midIdDle", "midIdDle"},
+		{"APIProxy", "APIProxy"},
+		{"ApiProxy", "APIProxy"},
+		{"apiProxy", "apiProxy"},
+		{"_Leading", "_Leading"},
+		{"___Leading", "_Leading"},
+		{"trailing_", "trailing"},
+		{"trailing___", "trailing"},
+		{"a_b", "aB"},
+		{"a__b", "aB"},
+		{"a___b", "aB"},
+		{"Rpc1150", "RPC1150"},
+		{"case3_1", "case3_1"},
+		{"case3__1", "case3_1"},
+		{"IEEE802_16bit", "IEEE802_16bit"},
+		{"IEEE802_16Bit", "IEEE802_16Bit"},
+	}
+	file := &file{
+		config: &Config{
+			Initialisms: []string{"API", "RPC"},
+		},
+	}
+	for _, test := range tests {
+		got := file.lintName(test.name)
 		if got != test.want {
 			t.Errorf("lintName(%q) = %q, want %q", test.name, got, test.want)
 		}
