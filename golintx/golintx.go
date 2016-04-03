@@ -90,6 +90,9 @@ func lintFiles(filenames ...string) {
 			fmt.Printf("%v: %s\n", p.Position, p.Text)
 		}
 	}
+	if len(ps) > 0 {
+		os.Exit(1)
+	}
 }
 
 func lintDir(dirname string) {
