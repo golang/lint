@@ -1,0 +1,5 @@
+package: github.com/haruyama/golintx
+import:
+- package: golang.org/x/tools
+  subpackages:
+  - go/gcimporter15

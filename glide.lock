@@ -1,0 +1,8 @@
+hash: e3dff202802fb40402ea7e7b260020193c0d7909206529f18569db6d742f2f2f
+updated: 2016-04-03T16:12:10.911457473+09:00
+imports:
+- name: golang.org/x/tools
+  version: 6361b5799a8e5f2ed8a234717d217fd289451c53
+  subpackages:
+  - go/gcimporter15
+devImports: []
