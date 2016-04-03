@@ -1,0 +1,33 @@
+box: pacificporter/golang:1.6-4.3.0
+build:
+  steps:
+    - script:
+        name: copy source
+        code: |
+          mkdir -p $GOPATH/src/github.com/haruyama
+          cp -ar $WERCKER_SOURCE_DIR/ $GOPATH/src/github.com/haruyama/golintx
+    - script:
+        name: glide i
+        cwd: $GOPATH/src/github.com/haruyama/golintx
+        code: |
+          glide i
+    - script:
+        name: go build
+        cwd: $GOPATH/src/github.com/haruyama/golintx
+        code: |
+          go build $(glide novendor)
+    - script:
+        name: go vet
+        cwd: $GOPATH/src/github.com/haruyama/golintx
+        code: |
+          go vet $(glide novendor)
+    - script:
+        name: errcheck
+        cwd: $GOPATH/src/github.com/haruyama/golintx
+        code: |
+          errcheck $(glide novendor)
+    - script:
+        name: go test
+        cwd: $GOPATH/src/github.com/haruyama/golintx
+        code: |
+          go test $(glide novendor)

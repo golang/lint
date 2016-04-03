@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/lint"
+	"github.com/haruyama/golintx"
 )
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
@@ -79,7 +79,7 @@ func lintFiles(filenames ...string) {
 		files[filename] = src
 	}
 
-	l := new(lint.Linter)
+	l := new(golintx.Linter)
 	ps, err := l.LintFiles(files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -89,6 +89,9 @@ func lintFiles(filenames ...string) {
 		if p.Confidence >= *minConfidence {
 			fmt.Printf("%v: %s\n", p.Position, p.Text)
 		}
+	}
+	if len(ps) > 0 {
+		os.Exit(1)
 	}
 }
 

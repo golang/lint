@@ -156,7 +156,7 @@ func matchPackages(pattern string) []string {
 
 	// Commands
 	cmd := filepath.Join(goroot, "src/cmd") + string(filepath.Separator)
-	filepath.Walk(cmd, func(path string, fi os.FileInfo, err error) error {
+	_ = filepath.Walk(cmd, func(path string, fi os.FileInfo, err error) error {
 		if err != nil || !fi.IsDir() || path == cmd {
 			return nil
 		}
@@ -194,7 +194,7 @@ func matchPackages(pattern string) []string {
 			continue
 		}
 		src = filepath.Clean(src) + string(filepath.Separator)
-		filepath.Walk(src, func(path string, fi os.FileInfo, err error) error {
+		_ = filepath.Walk(src, func(path string, fi os.FileInfo, err error) error {
 			if err != nil || !fi.IsDir() || path == src {
 				return nil
 			}
@@ -262,7 +262,7 @@ func matchPackagesInFS(pattern string) []string {
 	match := matchPattern(pattern)
 
 	var pkgs []string
-	filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+	_ = filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
 		if err != nil || !fi.IsDir() {
 			return nil
 		}

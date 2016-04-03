@@ -1,0 +1,12 @@
+hash: 9316bcd1bac8b77040aa4f05634bb415377649b57c25fa5d50bfb971971a1975
+updated: 2016-04-03T17:02:27.47324946+09:00
+imports:
+- name: github.com/go-utils/uslice
+  version: 7f8c3df848991b2e38824a7bda55bda1339b651e
+- name: github.com/hashicorp/hcl
+  version: 2604f3bda7e8960c1be1063709e7d7f0765048d0
+- name: golang.org/x/tools
+  version: 6361b5799a8e5f2ed8a234717d217fd289451c53
+  subpackages:
+  - go/gcimporter15
+devImports: []
