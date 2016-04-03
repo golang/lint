@@ -7,6 +7,11 @@ build:
           mkdir -p $GOPATH/src/github.com/haruyama
           cp -ar $WERCKER_SOURCE_DIR/ $GOPATH/src/github.com/haruyama/golintx
     - script:
+        name: glide i
+        cwd: $GOPATH/src/github.com/haruyama/golintx
+        code: |
+          glide i
+    - script:
         name: go build
         cwd: $GOPATH/src/github.com/haruyama/golintx
         code: |
