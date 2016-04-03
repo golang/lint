@@ -13,7 +13,8 @@ import (
 var configMap = map[string]*Config{}
 
 type Config struct {
-	Exclude ExcludesConfig
+	Exclude     ExcludesConfig
+	Initialisms []string
 }
 
 type ExcludesConfig struct {
@@ -86,4 +87,15 @@ func excludeCategories(ps []Problem, cs []string) []Problem {
 		}
 	}
 	return newPs
+}
+
+func (config *Config) initialismMap() map[string]bool {
+	if len(config.Initialisms) == 0 {
+		return commonInitialisms
+	}
+	m := make(map[string]bool, len(config.Initialisms))
+	for _, i := range config.Initialisms {
+		m[i] = true
+	}
+	return m
 }

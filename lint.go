@@ -116,6 +116,7 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 			fset:     pkg.fset,
 			src:      src,
 			filename: filename,
+			config:   config,
 		}
 	}
 	ps := pkg.lint()
@@ -180,6 +181,7 @@ type file struct {
 	fset     *token.FileSet
 	src      []byte
 	filename string
+	config   *Config
 }
 
 func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") }
@@ -560,7 +562,7 @@ func (f *file) lintNames() {
 			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
 		}
 
-		should := lintName(id.Name)
+		should := f.lintName(id.Name)
 		if id.Name == should {
 			return
 		}
@@ -661,7 +663,7 @@ func (f *file) lintNames() {
 }
 
 // lintName returns a different name if it should be different.
-func lintName(name string) (should string) {
+func (f *file) lintName(name string) (should string) {
 	// Fast path for simple cases: "_" and all lowercase.
 	if name == "_" {
 		return name
@@ -711,7 +713,8 @@ func lintName(name string) (should string) {
 
 		// [w,i) is a word.
 		word := string(runes[w:i])
-		if u := strings.ToUpper(word); commonInitialisms[u] {
+		initialisms := f.config.initialismMap()
+		if u := strings.ToUpper(word); initialisms[u] {
 			// Keep consistent case, which is lowercase only at the start.
 			if w == 0 && unicode.IsLower(runes[w]) {
 				u = strings.ToLower(u)
