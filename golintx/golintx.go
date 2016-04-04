@@ -21,6 +21,8 @@ import (
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 
+var hasProblem = false
+
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\tgolint [flags] # runs on package in current directory\n")
@@ -56,6 +58,9 @@ func main() {
 	default:
 		lintFiles(flag.Args()...)
 	}
+	if hasProblem {
+		os.Exit(1)
+	}
 }
 
 func isDir(filename string) bool {
@@ -71,6 +76,15 @@ func exists(filename string) bool {
 func lintFiles(filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
+		if strings.HasSuffix(filename, "/...") && isDir(filename[:len(filename)-4]) {
+			for _, dirname := range allPackagesInFS(filename) {
+				lintDir(dirname)
+			}
+			continue
+		} else if isDir(filename) {
+			lintDir(filename)
+			continue
+		}
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -91,7 +105,7 @@ func lintFiles(filenames ...string) {
 		}
 	}
 	if len(ps) > 0 {
-		os.Exit(1)
+		hasProblem = true
 	}
 }
 
