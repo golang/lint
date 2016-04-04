@@ -76,6 +76,15 @@ func exists(filename string) bool {
 func lintFiles(filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
+		if strings.HasSuffix(filename, "/...") && isDir(filename[:len(filename)-4]) {
+			for _, dirname := range allPackagesInFS(filename) {
+				lintDir(dirname)
+			}
+			continue
+		} else if isDir(filename) {
+			lintDir(filename)
+			continue
+		}
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
