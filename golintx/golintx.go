@@ -21,6 +21,8 @@ import (
 
 var minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 
+var hasProblem = false
+
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\tgolint [flags] # runs on package in current directory\n")
@@ -55,6 +57,9 @@ func main() {
 		}
 	default:
 		lintFiles(flag.Args()...)
+	}
+	if hasProblem {
+		os.Exit(1)
 	}
 }
 
@@ -91,7 +96,7 @@ func lintFiles(filenames ...string) {
 		}
 	}
 	if len(ps) > 0 {
-		os.Exit(1)
+		hasProblem = true
 	}
 }
 
