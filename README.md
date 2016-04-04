@@ -15,3 +15,51 @@ Golintx is a linter for Go source code.
 Golintx requires Go 1.5 or later.
 
     go get -u github.com/haruyama/golintx/golintx
+
+# Config File (.golintx.hcl)
+
+```
+exclude {
+        // array of categories which golintx do not output
+        categories = ["comments"]
+}
+// array of initialisms
+initialisms = [
+        "API",
+        "ASCII",
+        "CPU",
+        "CSS",
+        "DNS",
+        "EOF",
+        "GUID",
+        "HTML",
+        "HTTP",
+        "HTTPS",
+        // "ID",
+        "IP",
+        "JSON",
+        "LHS",
+        "QPS",
+        "RAM",
+        "RHS",
+        "RPC",
+        "SLA",
+        "SMTP",
+        "SQL",
+        "SSH",
+        "TCP",
+        "TLS",
+        "TTL",
+        "UDP",
+        "UI",
+        "UID",
+        "UUID",
+        // "URI",
+        // "URL",
+        "UTF8",
+        "VM",
+        "XML",
+        "XSRF",
+        "XSS",
+]
+```

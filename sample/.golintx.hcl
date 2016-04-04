@@ -1,6 +1,8 @@
 exclude {
+        // array of categories which golintx do not output
         categories = ["comments"]
 }
+// array of initialisms
 initialisms = [
         "API",
         "ASCII",
@@ -12,6 +14,7 @@ initialisms = [
         "HTML",
         "HTTP",
         "HTTPS",
+        // "ID",
         "IP",
         "JSON",
         "LHS",
@@ -30,6 +33,8 @@ initialisms = [
         "UI",
         "UID",
         "UUID",
+        // "URI",
+        // "URL",
         "UTF8",
         "VM",
         "XML",
