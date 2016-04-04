@@ -4,9 +4,13 @@ Original: https://github.com/golang/lint
 
 Golintx is a linter for Go source code.
 
-[![Build Status](https://travis-ci.org/golang/lint.svg?branch=master)](https://travis-ci.org/golang/lint)
+# Differences From Original golint
 
-## Installation
+* Support per-directory config files
+    * if a config file on lint-target directory does not exists, search files in ancestor diretories recursively.
+* exit(1) if any problem exists
+
+# Installation
 
 Golintx requires Go 1.5 or later.
 
