@@ -102,10 +102,8 @@ func lintFiles(filenames ...string) {
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			fmt.Printf("%v: %s\n", p.Position, p.Text)
+			hasProblem = true
 		}
-	}
-	if len(ps) > 0 {
-		hasProblem = true
 	}
 }
 
