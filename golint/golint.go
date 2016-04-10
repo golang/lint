@@ -11,9 +11,13 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/golang/lint"
@@ -69,25 +73,61 @@ func exists(filename string) bool {
 }
 
 func lintFiles(filenames ...string) {
-	files := make(map[string][]byte)
+	files := make(map[string]struct{})         // Map of already loaded files
+	pkgs := make(map[string]map[string][]byte) // Map of packages each holding a map of their loaded files
 	for _, filename := range filenames {
+		if _, ok := files[filename]; ok {
+			continue
+		}
+
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			continue
 		}
-		files[filename] = src
+		files[filename] = struct{}{}
+
+		pkgName := path.Dir(filename)
+		if strings.HasSuffix(filename, "_test.go") {
+			f, err := parser.ParseFile(token.NewFileSet(), "", src, 0)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+				return
+			}
+
+			if n := f.Name.Name; strings.HasSuffix(n, "_test") {
+				pkgName = pkgName + " " + n
+			}
+		}
+
+		pkg, ok := pkgs[pkgName]
+		if !ok {
+			pkg = make(map[string][]byte)
+
+			pkgs[pkgName] = pkg
+		}
+
+		pkg[filename] = src
 	}
 
-	l := new(lint.Linter)
-	ps, err := l.LintFiles(files)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return
+	pkgsNames := make([]string, 0, len(pkgs))
+	for n := range pkgs {
+		pkgsNames = append(pkgsNames, n)
 	}
-	for _, p := range ps {
-		if p.Confidence >= *minConfidence {
-			fmt.Printf("%v: %s\n", p.Position, p.Text)
+	sort.Strings(pkgsNames)
+
+	l := new(lint.Linter)
+
+	for _, n := range pkgsNames {
+		ps, err := l.LintFiles(pkgs[n])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			return
+		}
+		for _, p := range ps {
+			if p.Confidence >= *minConfidence {
+				fmt.Printf("%v: %s\n", p.Position, p.Text)
+			}
 		}
 	}
 }
@@ -116,12 +156,22 @@ func lintImportedPackage(pkg *build.Package, err error) {
 	files = append(files, pkg.GoFiles...)
 	files = append(files, pkg.CgoFiles...)
 	files = append(files, pkg.TestGoFiles...)
-	if pkg.Dir != "." {
-		for i, f := range files {
-			files[i] = filepath.Join(pkg.Dir, f)
-		}
-	}
-	// TODO(dsymonds): Do foo_test too (pkg.XTestGoFiles)
+	joinDirWithFilenames(pkg.Dir, files)
 
 	lintFiles(files...)
+
+	if len(pkg.XTestGoFiles) > 0 {
+		files := pkg.XTestGoFiles
+		joinDirWithFilenames(pkg.Dir, files)
+
+		lintFiles(files...)
+	}
+}
+
+func joinDirWithFilenames(dir string, files []string) {
+	if dir != "." {
+		for i, f := range files {
+			files[i] = filepath.Join(dir, f)
+		}
+	}
 }
