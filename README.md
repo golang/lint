@@ -15,7 +15,7 @@ Golintx is a linter for Go source code.
 
 # Installation
 
-Golintx requires Go 1.5 or later.
+Golintx requires Go 1.6 or later.
 
     go get -u github.com/haruyama/golintx/golintx
 
