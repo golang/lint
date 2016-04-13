@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-utils/uslice"
 	"github.com/hashicorp/hcl"
 )
 
@@ -82,7 +81,7 @@ func parseConfig(filename string) (*Config, error) {
 func excludeCategories(ps []Problem, cs []string) []Problem {
 	newPs := make([]Problem, 0, len(ps))
 	for _, p := range ps {
-		if !uslice.StrHas(cs, p.Category) {
+		if !strHas(cs, p.Category) {
 			newPs = append(newPs, p)
 		}
 	}
@@ -98,4 +97,13 @@ func (config *Config) initialismMap() map[string]bool {
 		m[i] = true
 	}
 	return m
+}
+
+func strHas(ss []string, t string) bool {
+	for _, s := range ss {
+		if s == t {
+			return true
+		}
+	}
+	return false
 }
