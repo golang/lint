@@ -1,7 +1,6 @@
 package: github.com/haruyama/golintx
 import:
-- package: golang.org/x/tools
+- package: go.googlesource.com/tools
   subpackages:
   - go/gcimporter15
 - package: github.com/hashicorp/hcl
-- package: github.com/go-utils/uslice
