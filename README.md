@@ -1,3 +1,8 @@
+
+Golint with initialisms check removed!
+
+-----------------------------------------
+
 Golint is a linter for Go source code.
 
 [![Build Status](https://travis-ci.org/golang/lint.svg?branch=master)](https://travis-ci.org/golang/lint)
@@ -5,8 +10,8 @@ Golint is a linter for Go source code.
 ## Installation
 
 Golint requires Go 1.5 or later.
+    go get -u github.com/leonardaustin/lint/golint
 
-    go get -u github.com/golang/lint/golint
 
 ## Usage
 
