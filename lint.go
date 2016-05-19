@@ -181,6 +181,7 @@ func (f *file) lint() {
 	f.lintErrorf()
 	f.lintErrors()
 	f.lintErrorStrings()
+	f.lintErrorComparisons()
 	f.lintReceiverNames()
 	f.lintIncDec()
 	f.lintMake()
@@ -1213,6 +1214,32 @@ func (f *file) lintErrorStrings() {
 			conf = 0.6
 		}
 		f.errorf(str, conf, link(styleGuideBase+"#error-strings"), category("errors"), msg)
+		return true
+	})
+}
+
+// lintErrorComparisons examines uses of errors. It complains if errors are compared to strings.
+func (f *file) lintErrorComparisons() {
+	f.walk(func(n ast.Node) bool {
+		ce, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		if !isPkgDot(ce.Fun, "strings", "Contains") {
+			return true
+		}
+		if len(ce.Args) < 2 {
+			return true
+		}
+		src, ok := ce.Args[0].(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		selSrc, ok := src.Fun.(*ast.SelectorExpr)
+		if !ok || !isIdent(selSrc.Sel, "Error") {
+			return true
+		}
+		f.errorf(n, 0.9, category("errors"), `error should not be compared to string`)
 		return true
 	})
 }
