@@ -39,3 +39,18 @@ func (bar) f6() {
 
 func (_ *bar) f7() { // MATCH /receiver name should not be an underscore/
 }
+
+type multiError struct{}
+
+func (me multiError) f8() {
+}
+
+type sideEffectLoadFormatter struct{}
+
+func (self sideEffectLoadFormatter) f9() {
+}
+
+type totalHealthInformationSystem struct{}
+
+func (this totalHealthInformationSystem) f10() {
+}

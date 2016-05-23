@@ -288,3 +288,22 @@ func TestExportedType(t *testing.T) {
 		}
 	}
 }
+
+func TestOKReceiverName(t *testing.T) {
+	tests := []struct {
+		recv string
+		want string
+	}{
+		{"foo", "f"},
+		{"Bar", "b"},
+		{"TLA", "tla"},
+		{"MultiError", "me"},
+		{"SideEffectLoadFormatter", "self"},
+		{"totalHealthInformationSystem", "this"},
+	}
+	for _, test := range tests {
+		if got := okReceiverName(test.recv); got != test.want {
+			t.Errorf("okReceiverName(%q) == %q, want %q", test.recv, got, test.want)
+		}
+	}
+}
