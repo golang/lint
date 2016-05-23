@@ -1223,6 +1223,16 @@ var badReceiverNames = map[string]bool{
 	"self": true,
 }
 
+func okReceiverName(recv string) string {
+	var rs []rune
+	for i, r := range recv {
+		if i == 0 || unicode.IsUpper(r) {
+			rs = append(rs, unicode.ToLower(r))
+		}
+	}
+	return string(rs)
+}
+
 // lintReceiverNames examines receiver names. It complains about inconsistent
 // names used for the same type and names such as "this".
 func (f *file) lintReceiverNames() {
@@ -1242,11 +1252,11 @@ func (f *file) lintReceiverNames() {
 			f.errorf(n, 1, link(ref), category("naming"), `receiver name should not be an underscore`)
 			return true
 		}
-		if badReceiverNames[name] {
+		recv := receiverType(fn)
+		if badReceiverNames[name] && name != okReceiverName(recv) {
 			f.errorf(n, 1, link(ref), category("naming"), `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
 			return true
 		}
-		recv := receiverType(fn)
 		if prev, ok := typeReceiver[recv]; ok && prev != name {
 			f.errorf(n, 1, link(ref), category("naming"), "receiver name %s should be consistent with previous receiver name %s for %s", name, prev, recv)
 			return true
