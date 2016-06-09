@@ -1,4 +1,4 @@
-// Test that duplicate imports in library packages are flagged in an average-looking import section.
+// Test that duplicate imports in library packages are flagged in an import section that includes blank imports.
 
 // Package main...
 package main
