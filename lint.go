@@ -173,6 +173,7 @@ func (f *file) lint() {
 	f.lintPackageComment()
 	f.lintImports()
 	f.lintBlankImports()
+	f.lintDuplicateImports()
 	f.lintExported()
 	f.lintNames()
 	f.lintVarDecls()
@@ -447,6 +448,37 @@ func (f *file) lintBlankImports() {
 		if imp.Doc == nil && imp.Comment == nil {
 			ref := ""
 			f.errorf(imp, 1, link(ref), category("imports"), "a blank import should be only in a main or test package, or have a comment justifying it")
+		}
+	}
+}
+
+// lintDuplicateImports complains if something is imported more than once, perhaps with different aliases.
+func (f *file) lintDuplicateImports() {
+	pathImps := map[string][]*ast.ImportSpec{}
+	for _, imp := range f.f.Imports {
+		path, _ := strconv.Unquote(imp.Path.Value) // can assume well-formed Go
+		pathImps[path] = append(pathImps[path], imp)
+	}
+
+	lineNums := func(imps []*ast.ImportSpec) string {
+		var lns []string
+		for _, imp := range imps {
+			pos := f.fset.Position(imp.Pos())
+			lns = append(lns, strconv.Itoa(pos.Line))
+		}
+		return strings.Join(lns, ", ")
+	}
+
+	for path, imps := range pathImps {
+		if len(imps) == 1 {
+			continue
+		}
+
+		nums := lineNums(imps)
+		for _, imp := range imps {
+			ref := ""
+			msg := fmt.Sprintf("duplicate import: %q is imported %d times (lines %s)", path, len(imps), nums)
+			f.errorf(imp, 1, link(ref), category("imports"), msg)
 		}
 	}
 }
