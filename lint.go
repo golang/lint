@@ -766,6 +766,20 @@ var commonInitialisms = map[string]bool{
 	"XSS":   true,
 }
 
+// trimComment removes any non alphanumeric characters from
+// the start of a comment.  This happens before the text of
+// the comment is considered.
+func trimComment(comment string) string {
+
+	for offset, rune := range comment {
+		if unicode.IsDigit(rune) || unicode.IsLetter(rune) {
+			return comment[offset:]
+		}
+	}
+
+	return ""
+}
+
 // lintTypeDoc examines the doc comment on a type.
 // It complains if they are missing from an exported type,
 // or if they are not of the standard form.
@@ -778,7 +792,8 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 		return
 	}
 
-	s := doc.Text()
+	s := trimComment(doc.Text())
+
 	articles := [...]string{"A", "An", "The"}
 	for _, a := range articles {
 		if strings.HasPrefix(s, a+" ") {
@@ -832,7 +847,7 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 		f.errorf(fn, 1, link(docCommentsLink), category("comments"), "exported %s %s should have comment or be unexported", kind, name)
 		return
 	}
-	s := fn.Doc.Text()
+	s := trimComment(fn.Doc.Text())
 	prefix := fn.Name.Name + " "
 	if !strings.HasPrefix(s, prefix) {
 		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
@@ -887,7 +902,7 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 		doc = gd.Doc
 	}
 	prefix := name + " "
-	if !strings.HasPrefix(doc.Text(), prefix) {
+	if !strings.HasPrefix(trimComment(doc.Text()), prefix) {
 		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
 	}
 }
