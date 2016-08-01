@@ -187,6 +187,7 @@ func (f *file) lint() {
 	f.lintErrorReturn()
 	f.lintUnexportedReturn()
 	f.lintTimeNames()
+	f.lintContextTODO()
 }
 
 type link string
@@ -1434,6 +1435,71 @@ func (f *file) lintTimeNames() {
 		}
 		return true
 	})
+}
+
+var contextPackages = []string{
+	"context",
+	"golang.org/x/net/context",
+}
+
+// lintContextTODO examines context.TODO() calls and warns if the function has a
+// context.Context argument.
+func (f *file) lintContextTODO() {
+	for _, imp := range f.f.Imports {
+		// Handle context package name aliases.
+		path := imp.Path.Value
+		match := false
+		for _, pkg := range contextPackages {
+			// Add quotation marks to the package path.
+			if path == fmt.Sprintf(`"%s"`, pkg) {
+				match = true
+			}
+		}
+		if !match {
+			continue
+		}
+		pkgName := imp.Name.String()
+		if imp.Name == nil {
+			pkgName = "context"
+		}
+
+		f.walk(func(node ast.Node) bool {
+			var funcType *ast.FuncType
+			if fd, ok := node.(*ast.FuncDecl); ok {
+				funcType = fd.Type
+			} else if fl, ok := node.(*ast.FuncLit); ok {
+				funcType = fl.Type
+			} else {
+				return true
+			}
+
+			// Find context.Context arguments.
+			var names []string
+			for _, field := range funcType.Params.List {
+				if !isPkgDot(field.Type, pkgName, "Context") {
+					continue
+				}
+				for _, name := range field.Names {
+					names = append(names, name.String())
+				}
+			}
+			if len(names) == 0 {
+				return true
+			}
+
+			// Check for context.TODO() in the function body.
+			ast.Walk(walker(func(node ast.Node) bool {
+				if ce, ok := node.(*ast.CallExpr); ok {
+					if isPkgDot(ce.Fun, pkgName, "TODO") {
+						f.errorf(ce, 0.9, category("context"), "should use one of %+v instead of %s.TODO()", names, pkgName)
+					}
+				}
+				return true
+			}), node)
+
+			return true
+		})
+	}
 }
 
 func receiverType(fn *ast.FuncDecl) string {
