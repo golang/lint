@@ -1443,7 +1443,7 @@ var contextPackages = []string{
 }
 
 // lintContextTODO examines context.TODO() calls and warns if the function has a
-// context.Context argument.
+// context.Context argument or if there are context.TODO() calls in test files.
 func (f *file) lintContextTODO() {
 	for _, imp := range f.f.Imports {
 		// Handle context package name aliases.
@@ -1463,6 +1463,7 @@ func (f *file) lintContextTODO() {
 			pkgName = "context"
 		}
 
+		// Check for context.TODO() when there a context already exists.
 		f.walk(func(node ast.Node) bool {
 			var funcType *ast.FuncType
 			if fd, ok := node.(*ast.FuncDecl); ok {
@@ -1499,6 +1500,18 @@ func (f *file) lintContextTODO() {
 
 			return true
 		})
+
+		// Check for context.TODO() in test files.
+		if f.isTest() {
+			f.walk(func(node ast.Node) bool {
+				if ce, ok := node.(*ast.CallExpr); ok {
+					if isPkgDot(ce.Fun, pkgName, "TODO") {
+						f.errorf(ce, 0.9, category("context"), "should use context.Background() instead of %s.TODO() in tests", pkgName)
+					}
+				}
+				return true
+			})
+		}
 	}
 }
 
