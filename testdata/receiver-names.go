@@ -39,3 +39,8 @@ func (bar) f6() {
 
 func (_ *bar) f7() { // MATCH /receiver name should not be an underscore/
 }
+
+type bar struct{}
+
+func (me baz) f1() {
+}

@@ -1218,7 +1218,6 @@ func (f *file) lintErrorStrings() {
 }
 
 var badReceiverNames = map[string]bool{
-	"me":   true,
 	"this": true,
 	"self": true,
 }
