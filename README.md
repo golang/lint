@@ -7,9 +7,9 @@ Golintx is a linter for Go source code.
 # Differences From Original golint
 
 * Support per-directory config files
-    * if a config file on lint-target directory does not exists, search files in ancestor diretories recursively.
+    * if a config file on lint-target directory does not exists, search files in ancestor directories recursively.
 * exit(1) if any problem exists
-* Support multi diretories on command line
+* Support multi directories on command line
     * ex: golintx $(glide novendor)
 
 
