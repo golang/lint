@@ -1437,14 +1437,19 @@ func (f *file) lintTimeNames() {
 	})
 }
 
+// receiverType returns the named type of the method receiver, sans "*",
+// or "invalid-type" if fn.Recv is ill formed.
 func receiverType(fn *ast.FuncDecl) string {
 	switch e := fn.Recv.List[0].Type.(type) {
 	case *ast.Ident:
 		return e.Name
 	case *ast.StarExpr:
-		return e.X.(*ast.Ident).Name
+		if id, ok := e.X.(*ast.Ident); ok {
+			return id.Name
+		}
 	}
-	panic(fmt.Sprintf("unknown method receiver AST node type %T", fn.Recv.List[0].Type))
+	// The parser accepts much more than just the legal forms.
+	return "invalid-type"
 }
 
 func (f *file) walk(fn func(ast.Node) bool) {

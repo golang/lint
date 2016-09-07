@@ -39,3 +39,6 @@ func (bar) f6() {
 
 func (_ *bar) f7() { // MATCH /receiver name should not be an underscore/
 }
+
+// Regression test for a panic caused by ill-formed receiver type.
+func (recv []*x.y) f()
