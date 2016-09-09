@@ -15,19 +15,29 @@ import (
 	"go/build"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 )
 
 var buildContext = build.Default
 
 var (
-	goroot    = filepath.Clean(runtime.GOROOT())
+	goroot    = filepath.Clean(goRoot())
 	gorootSrc = filepath.Join(goroot, "src")
 )
+
+func goRoot() string {
+	if goroot := os.Getenv("GOROOT"); goroot != "" {
+		return goroot
+	}
+	if output, err := exec.Command("go", "env", "GOROOT").CombinedOutput(); err == nil {
+		return strings.TrimSpace(string(output))
+	}
+	panic("unable to determine GOROOT")
+}
 
 // importPathsNoDotExpansion returns the import paths to use for the given
 // command line, but it does no ... expansion.
