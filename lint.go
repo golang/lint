@@ -935,18 +935,6 @@ var zeroLiteral = map[string]bool{
 	"0i":  true,
 }
 
-// knownWeakerTypes is a set of types that are commonly used to weaken var declarations.
-// A common form of var declarations that legitimately mentions an explicit LHS type
-// is where the LHS type is "weaker" than the exact RHS type, where "weaker" means an
-// interface compared to a concrete type, or an interface compared to a superset interface.
-// A canonical example is `var out io.Writer = os.Stdout`.
-// This is only used when type checking fails to determine the exact types.
-var knownWeakerTypes = map[string]bool{
-	"io.Reader":     true,
-	"io.Writer":     true,
-	"proto.Message": true,
-}
-
 // lintVarDecls examines variable declarations. It complains about declarations with
 // redundant LHS types that can be inferred from the RHS.
 func (f *file) lintVarDecls() {
@@ -986,7 +974,13 @@ func (f *file) lintVarDecls() {
 			}
 			lhsTyp := f.pkg.typeOf(v.Type)
 			rhsTyp := f.pkg.typeOf(rhs)
-			if lhsTyp != nil && rhsTyp != nil && !types.Identical(lhsTyp, rhsTyp) {
+
+			if !validType(lhsTyp) || !validType(rhsTyp) {
+				// Type checking failed (often due to missing imports).
+				return false
+			}
+
+			if !types.Identical(lhsTyp, rhsTyp) {
 				// Assignment to a different type is not redundant.
 				return false
 			}
@@ -1005,19 +999,18 @@ func (f *file) lintVarDecls() {
 			if defType, ok := f.isUntypedConst(rhs); ok && !isIdent(v.Type, defType) {
 				return false
 			}
-			// If the LHS is a known weaker type, and we couldn't type check both sides,
-			// don't warn.
-			if lhsTyp == nil || rhsTyp == nil {
-				if knownWeakerTypes[f.render(v.Type)] {
-					return false
-				}
-			}
 
 			f.errorf(v.Type, 0.8, category("type-inference"), "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
 			return false
 		}
 		return true
 	})
+}
+
+func validType(T types.Type) bool {
+	return T != nil &&
+		T != types.Typ[types.Invalid] &&
+		!strings.Contains(T.String(), "invalid type") // good but not foolproof
 }
 
 // lintElses examines else blocks. It complains about any else block whose if block ends in a return.
