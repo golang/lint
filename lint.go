@@ -237,9 +237,7 @@ argLoop:
 
 var gcImporter = gcimporter.Import
 
-// importer implements go/types.Importer.
-// It also implements go/types.ImporterFrom, which was new in Go 1.6,
-// so vendoring will work.
+// importer implements go/types.Importer{,From}.
 type importer struct {
 	impFn    func(packages map[string]*types.Package, path, srcDir string) (*types.Package, error)
 	packages map[string]*types.Package
@@ -249,7 +247,9 @@ func (i importer) Import(path string) (*types.Package, error) {
 	return i.impFn(i.packages, path, "")
 }
 
-// (importer).ImportFrom is in lint16.go.
+func (i importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
+	return i.impFn(i.packages, path, srcDir)
+}
 
 func (p *pkg) typeCheck() error {
 	config := &types.Config{
