@@ -1155,18 +1155,26 @@ func (f *file) lintErrors() {
 	}
 }
 
-func lintCapAndPunct(s string) (isCap, isPunct bool) {
+func lintErrorString(s string) (isClean bool, conf float64) {
+	const basicConfidence = 0.8
+	const capConfidence = basicConfidence - 0.2
 	first, firstN := utf8.DecodeRuneInString(s)
 	last, _ := utf8.DecodeLastRuneInString(s)
-	isPunct = last == '.' || last == ':' || last == '!'
-	isCap = unicode.IsUpper(first)
-	if isCap && len(s) > firstN {
+	if last == '.' || last == ':' || last == '!' || last == '\n' {
+		return false, basicConfidence
+	}
+	if unicode.IsUpper(first) {
+		// People use proper nouns and exported Go identifiers in error strings,
+		// so decrease the confidence of warnings for capitalization.
+		if len(s) <= firstN {
+			return false, capConfidence
+		}
 		// Don't flag strings starting with something that looks like an initialism.
-		if second, _ := utf8.DecodeRuneInString(s[firstN:]); unicode.IsUpper(second) {
-			isCap = false
+		if second, _ := utf8.DecodeRuneInString(s[firstN:]); !unicode.IsUpper(second) {
+			return false, capConfidence
 		}
 	}
-	return
+	return true, 0
 }
 
 // lintErrorStrings examines error strings. It complains if they are capitalized or end in punctuation.
@@ -1190,25 +1198,13 @@ func (f *file) lintErrorStrings() {
 		if s == "" {
 			return true
 		}
-		isCap, isPunct := lintCapAndPunct(s)
-		var msg string
-		switch {
-		case isCap && isPunct:
-			msg = "error strings should not be capitalized and should not end with punctuation"
-		case isCap:
-			msg = "error strings should not be capitalized"
-		case isPunct:
-			msg = "error strings should not end with punctuation"
-		default:
+		clean, conf := lintErrorString(s)
+		if clean {
 			return true
 		}
-		// People use proper nouns and exported Go identifiers in error strings,
-		// so decrease the confidence of warnings for capitalization.
-		conf := 0.8
-		if isCap {
-			conf = 0.6
-		}
-		f.errorf(str, conf, link(styleGuideBase+"#error-strings"), category("errors"), msg)
+
+		f.errorf(str, conf, link(styleGuideBase+"#error-strings"), category("errors"),
+			"error strings should not be capitalized or end with punctuation or a newline")
 		return true
 	})
 }
