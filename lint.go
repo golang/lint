@@ -21,8 +21,6 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	"golang.org/x/tools/go/gcimporter15"
 )
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
@@ -762,6 +760,7 @@ var commonInitialisms = map[string]bool{
 	"UTF8":  true,
 	"VM":    true,
 	"XML":   true,
+	"XMPP":  true,
 	"XSRF":  true,
 	"XSS":   true,
 }
