@@ -187,6 +187,7 @@ func (f *file) lint() {
 	f.lintErrorReturn()
 	f.lintUnexportedReturn()
 	f.lintTimeNames()
+	f.lintContextKeyTypes()
 }
 
 type link string
@@ -1434,6 +1435,46 @@ func (f *file) lintTimeNames() {
 		}
 		return true
 	})
+}
+
+// lintContextKeyTypes checks for call expressions to context.WithValue with
+// basic types used for the key argument.
+// See: https://golang.org/issue/17293
+func (f *file) lintContextKeyTypes() {
+	f.walk(func(node ast.Node) bool {
+		switch node := node.(type) {
+		case *ast.CallExpr:
+			f.checkContextKeyType(node)
+		}
+
+		return true
+	})
+}
+
+// checkContextKeyType reports an error if the call expression calls
+// context.WithValue with a key argument of basic type.
+func (f *file) checkContextKeyType(x *ast.CallExpr) {
+	sel, ok := x.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	pkg, ok := sel.X.(*ast.Ident)
+	if !ok || pkg.Name != "context" {
+		return
+	}
+	if sel.Sel.Name != "WithValue" {
+		return
+	}
+
+	// key is second argument to context.WithValue
+	if len(x.Args) != 3 {
+		return
+	}
+	key := f.pkg.typesInfo.Types[x.Args[1]]
+
+	if _, ok := key.Type.(*types.Basic); ok {
+		f.errorf(x, 1.0, category("context"), fmt.Sprintf("should not use basic type %s as key in context.WithValue", key.Type))
+	}
 }
 
 func receiverType(fn *ast.FuncDecl) string {
