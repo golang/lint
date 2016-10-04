@@ -183,7 +183,6 @@ func (f *file) lint() {
 	f.lintErrorStrings()
 	f.lintReceiverNames()
 	f.lintIncDec()
-	f.lintMake()
 	f.lintErrorReturn()
 	f.lintUnexportedReturn()
 	f.lintTimeNames()
@@ -1269,35 +1268,6 @@ func (f *file) lintIncDec() {
 			return true
 		}
 		f.errorf(as, 0.8, category("unary-op"), "should replace %s with %s%s", f.render(as), f.render(as.Lhs[0]), suffix)
-		return true
-	})
-}
-
-// lintMake examines statements that declare and initialize a variable with make.
-// It complains if they are constructing a zero element slice.
-func (f *file) lintMake() {
-	f.walk(func(n ast.Node) bool {
-		as, ok := n.(*ast.AssignStmt)
-		if !ok {
-			return true
-		}
-		// Only want single var := assignment statements.
-		if len(as.Lhs) != 1 || as.Tok != token.DEFINE {
-			return true
-		}
-		ce, ok := as.Rhs[0].(*ast.CallExpr)
-		if !ok {
-			return true
-		}
-		// Check if ce is make([]T, 0).
-		if !isIdent(ce.Fun, "make") || len(ce.Args) != 2 || !isZero(ce.Args[1]) {
-			return true
-		}
-		at, ok := ce.Args[0].(*ast.ArrayType)
-		if !ok || at.Len != nil {
-			return true
-		}
-		f.errorf(as, 0.8, category("slice"), `can probably use "var %s %s" instead`, f.render(as.Lhs[0]), f.render(at))
 		return true
 	})
 }
