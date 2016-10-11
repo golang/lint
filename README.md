@@ -23,7 +23,7 @@ Golintx requires Go 1.6 or later.
 
 ```
 exclude {
-        // array of categories which golintx do not output
+        // array of categories which golintx does not report
         categories = ["comments"]
 }
 // array of initialisms
