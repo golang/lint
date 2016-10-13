@@ -187,6 +187,7 @@ func (f *file) lint() {
 	f.lintUnexportedReturn()
 	f.lintTimeNames()
 	f.lintContextKeyTypes()
+	f.lintContextArgs()
 }
 
 type link string
@@ -1434,6 +1435,27 @@ func (f *file) checkContextKeyType(x *ast.CallExpr) {
 	if _, ok := key.Type.(*types.Basic); ok {
 		f.errorf(x, 1.0, category("context"), fmt.Sprintf("should not use basic type %s as key in context.WithValue", key.Type))
 	}
+}
+
+// lintContextArgs examines function declarations that contain an
+// argument with a type of context.Context
+// It complains if that argument isn't the first parameter.
+func (f *file) lintContextArgs() {
+	f.walk(func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || len(fn.Type.Params.List) <= 1 {
+			return true
+		}
+		// A context.Context should be the first parameter of a function.
+		// Flag any that show up after the first.
+		for _, arg := range fn.Type.Params.List[1:] {
+			if isPkgDot(arg.Type, "context", "Context") {
+				f.errorf(fn, 0.9, link("https://golang.org/pkg/context/"), category("arg-order"), "context.Context should be the first parameter of a function")
+				break // only flag one
+			}
+		}
+		return true
+	})
 }
 
 // receiverType returns the named type of the method receiver, sans "*",
