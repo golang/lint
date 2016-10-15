@@ -14,14 +14,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/golang/lint"
 )
 
 var (
+	ignore = flag.String("ignore", "", "ignore the files whose path matches the regular expression")
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+
+	ignoreRE *regexp.Regexp
 	suggestions   int
 )
 
@@ -38,6 +42,10 @@ func usage() {
 func main() {
 	flag.Usage = usage
 	flag.Parse()
+
+	if *ignore != "" {
+		ignoreRE = regexp.MustCompile(*ignore)
+	}
 
 	switch flag.NArg() {
 	case 0:
@@ -80,6 +88,9 @@ func exists(filename string) bool {
 func lintFiles(filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
+		if ignoreRE != nil && ignoreRE.MatchString(filename) {
+			continue
+		}
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
