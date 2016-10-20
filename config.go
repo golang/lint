@@ -37,7 +37,12 @@ func fileExists(path string) (bool, error) {
 }
 
 func parseAndSetConfig(filename string) (*Config, error) {
-	baseDir := filepath.Dir(filename)
+	abs, err := filepath.Abs(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	baseDir := filepath.Dir(abs)
 
 	for dir := baseDir; ; dir = filepath.Dir(dir) {
 		config, ok := configMap[dir]
