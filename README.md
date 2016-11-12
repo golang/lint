@@ -4,6 +4,8 @@ Golint is a linter for Go source code.
 
 ## Installation
 
+Golint requires Go 1.6 or later.
+
     go get -u github.com/golang/lint/golint
 
 ## Usage

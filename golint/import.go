@@ -6,6 +6,8 @@ This file holds a direct copy of the import path matching code of
 https://github.com/golang/go/blob/master/src/cmd/go/main.go. It can be
 replaced when https://golang.org/issue/8768 is resolved.
 
+It has been updated to follow upstream changes in a few ways.
+
 */
 
 import (
@@ -23,8 +25,8 @@ import (
 var buildContext = build.Default
 
 var (
-	goroot       = filepath.Clean(runtime.GOROOT())
-	gorootSrcPkg = filepath.Join(goroot, "src/pkg")
+	goroot    = filepath.Clean(runtime.GOROOT())
+	gorootSrc = filepath.Join(goroot, "src")
 )
 
 // importPathsNoDotExpansion returns the import paths to use for the given
@@ -190,11 +192,15 @@ func matchPackages(pattern string) []string {
 	})
 
 	for _, src := range buildContext.SrcDirs() {
-		if pattern == "std" && src != gorootSrcPkg {
+		if (pattern == "std" || pattern == "cmd") && src != gorootSrc {
 			continue
 		}
 		src = filepath.Clean(src) + string(filepath.Separator)
-		filepath.Walk(src, func(path string, fi os.FileInfo, err error) error {
+		root := src
+		if pattern == "cmd" {
+			root += "cmd" + string(filepath.Separator)
+		}
+		filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 			if err != nil || !fi.IsDir() || path == src {
 				return nil
 			}
@@ -206,7 +212,9 @@ func matchPackages(pattern string) []string {
 			}
 
 			name := filepath.ToSlash(path[len(src):])
-			if pattern == "std" && strings.Contains(name, ".") {
+			if pattern == "std" && (strings.Contains(name, ".") || name == "cmd") {
+				// The name "std" is only the standard library.
+				// If the name is cmd, it's the root of the command tree.
 				return filepath.SkipDir
 			}
 			if !treeCanMatch(name) {

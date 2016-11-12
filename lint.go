@@ -14,6 +14,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"go/types"
 	"regexp"
 	"sort"
 	"strconv"
@@ -21,8 +22,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"golang.org/x/tools/go/gcimporter"
-	"golang.org/x/tools/go/types"
+	"golang.org/x/tools/go/gcimporter15"
 )
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
@@ -183,10 +183,11 @@ func (f *file) lint() {
 	f.lintErrorStrings()
 	f.lintReceiverNames()
 	f.lintIncDec()
-	f.lintMake()
 	f.lintErrorReturn()
 	f.lintUnexportedReturn()
 	f.lintTimeNames()
+	f.lintContextKeyTypes()
+	f.lintContextArgs()
 }
 
 type link string
@@ -236,11 +237,28 @@ argLoop:
 
 var gcImporter = gcimporter.Import
 
+// importer implements go/types.Importer{,From}.
+type importer struct {
+	impFn    func(packages map[string]*types.Package, path, srcDir string) (*types.Package, error)
+	packages map[string]*types.Package
+}
+
+func (i importer) Import(path string) (*types.Package, error) {
+	return i.impFn(i.packages, path, "")
+}
+
+func (i importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
+	return i.impFn(i.packages, path, srcDir)
+}
+
 func (p *pkg) typeCheck() error {
 	config := &types.Config{
 		// By setting a no-op error reporter, the type checker does as much work as possible.
-		Error:  func(error) {},
-		Import: gcImporter,
+		Error: func(error) {},
+		Importer: importer{
+			impFn:    gcImporter,
+			packages: make(map[string]*types.Package),
+		},
 	}
 	info := &types.Info{
 		Types:  make(map[ast.Expr]types.TypeAndValue),
@@ -397,7 +415,7 @@ func (f *file) lintPackageComment() {
 		s = ts
 	}
 	// Only non-main packages need to keep to this form.
-	if f.f.Name.Name != "main" && !strings.HasPrefix(s, prefix) {
+	if !f.pkg.main && !strings.HasPrefix(s, prefix) {
 		f.errorf(f.f.Doc, 1, link(ref), category("comments"), `package comment should be of the form "%s..."`, prefix)
 	}
 }
@@ -505,6 +523,14 @@ func (f *file) lintExported() {
 
 var allCapsRE = regexp.MustCompile(`^[A-Z0-9_]+$`)
 
+// knownNameExceptions is a set of names that are known to be exempt from naming checks.
+// This is usually because they are constrained by having to match names in the
+// standard library.
+var knownNameExceptions = map[string]bool{
+	"LastInsertId": true, // must match database/sql
+	"kWh":          true,
+}
+
 // lintNames examines all names in the file.
 // It complains if any use underscores or incorrect known initialisms.
 func (f *file) lintNames() {
@@ -515,6 +541,9 @@ func (f *file) lintNames() {
 
 	check := func(id *ast.Ident, thing string) {
 		if id.Name == "_" {
+			return
+		}
+		if knownNameExceptions[id.Name] {
 			return
 		}
 
@@ -702,6 +731,7 @@ func lintName(name string) (should string) {
 // Only add entries that are highly unlikely to be non-initialisms.
 // For instance, "ID" is fine (Freudian code is rare), but "AND" is not.
 var commonInitialisms = map[string]bool{
+	"ACL":   true,
 	"API":   true,
 	"ASCII": true,
 	"CPU":   true,
@@ -736,6 +766,7 @@ var commonInitialisms = map[string]bool{
 	"UTF8":  true,
 	"VM":    true,
 	"XML":   true,
+	"XMPP":  true,
 	"XSRF":  true,
 	"XSS":   true,
 }
@@ -908,18 +939,6 @@ var zeroLiteral = map[string]bool{
 	"0i":  true,
 }
 
-// knownWeakerTypes is a set of types that are commonly used to weaken var declarations.
-// A common form of var declarations that legitimately mentions an explicit LHS type
-// is where the LHS type is "weaker" than the exact RHS type, where "weaker" means an
-// interface compared to a concrete type, or an interface compared to a superset interface.
-// A canonical example is `var out io.Writer = os.Stdout`.
-// This is only used when type checking fails to determine the exact types.
-var knownWeakerTypes = map[string]bool{
-	"io.Reader":     true,
-	"io.Writer":     true,
-	"proto.Message": true,
-}
-
 // lintVarDecls examines variable declarations. It complains about declarations with
 // redundant LHS types that can be inferred from the RHS.
 func (f *file) lintVarDecls() {
@@ -959,7 +978,13 @@ func (f *file) lintVarDecls() {
 			}
 			lhsTyp := f.pkg.typeOf(v.Type)
 			rhsTyp := f.pkg.typeOf(rhs)
-			if lhsTyp != nil && rhsTyp != nil && !types.Identical(lhsTyp, rhsTyp) {
+
+			if !validType(lhsTyp) || !validType(rhsTyp) {
+				// Type checking failed (often due to missing imports).
+				return false
+			}
+
+			if !types.Identical(lhsTyp, rhsTyp) {
 				// Assignment to a different type is not redundant.
 				return false
 			}
@@ -978,19 +1003,18 @@ func (f *file) lintVarDecls() {
 			if defType, ok := f.isUntypedConst(rhs); ok && !isIdent(v.Type, defType) {
 				return false
 			}
-			// If the LHS is a known weaker type, and we couldn't type check both sides,
-			// don't warn.
-			if lhsTyp == nil || rhsTyp == nil {
-				if knownWeakerTypes[f.render(v.Type)] {
-					return false
-				}
-			}
 
 			f.errorf(v.Type, 0.8, category("type-inference"), "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
 			return false
 		}
 		return true
 	})
+}
+
+func validType(T types.Type) bool {
+	return T != nil &&
+		T != types.Typ[types.Invalid] &&
+		!strings.Contains(T.String(), "invalid type") // good but not foolproof
 }
 
 // lintElses examines else blocks. It complains about any else block whose if block ends in a return.
@@ -1191,12 +1215,6 @@ func (f *file) lintErrorStrings() {
 	})
 }
 
-var badReceiverNames = map[string]bool{
-	"me":   true,
-	"this": true,
-	"self": true,
-}
-
 // lintReceiverNames examines receiver names. It complains about inconsistent
 // names used for the same type and names such as "this".
 func (f *file) lintReceiverNames() {
@@ -1216,8 +1234,8 @@ func (f *file) lintReceiverNames() {
 			f.errorf(n, 1, link(ref), category("naming"), `receiver name should not be an underscore`)
 			return true
 		}
-		if badReceiverNames[name] {
-			f.errorf(n, 1, link(ref), category("naming"), `receiver name should be a reflection of its identity; don't use generic names such as "me", "this", or "self"`)
+		if name == "this" || name == "self" {
+			f.errorf(n, 1, link(ref), category("naming"), `receiver name should be a reflection of its identity; don't use generic names such as "this" or "self"`)
 			return true
 		}
 		recv := receiverType(fn)
@@ -1254,35 +1272,6 @@ func (f *file) lintIncDec() {
 			return true
 		}
 		f.errorf(as, 0.8, category("unary-op"), "should replace %s with %s%s", f.render(as), f.render(as.Lhs[0]), suffix)
-		return true
-	})
-}
-
-// lintMake examines statements that declare and initialize a variable with make.
-// It complains if they are constructing a zero element slice.
-func (f *file) lintMake() {
-	f.walk(func(n ast.Node) bool {
-		as, ok := n.(*ast.AssignStmt)
-		if !ok {
-			return true
-		}
-		// Only want single var := assignment statements.
-		if len(as.Lhs) != 1 || as.Tok != token.DEFINE {
-			return true
-		}
-		ce, ok := as.Rhs[0].(*ast.CallExpr)
-		if !ok {
-			return true
-		}
-		// Check if ce is make([]T, 0).
-		if !isIdent(ce.Fun, "make") || len(ce.Args) != 2 || !isZero(ce.Args[1]) {
-			return true
-		}
-		at, ok := ce.Args[0].(*ast.ArrayType)
-		if !ok || at.Len != nil {
-			return true
-		}
-		f.errorf(as, 0.8, category("slice"), `can probably use "var %s %s" instead`, f.render(as.Lhs[0]), f.render(at))
 		return true
 	})
 }
@@ -1410,14 +1399,80 @@ func (f *file) lintTimeNames() {
 	})
 }
 
+// lintContextKeyTypes checks for call expressions to context.WithValue with
+// basic types used for the key argument.
+// See: https://golang.org/issue/17293
+func (f *file) lintContextKeyTypes() {
+	f.walk(func(node ast.Node) bool {
+		switch node := node.(type) {
+		case *ast.CallExpr:
+			f.checkContextKeyType(node)
+		}
+
+		return true
+	})
+}
+
+// checkContextKeyType reports an error if the call expression calls
+// context.WithValue with a key argument of basic type.
+func (f *file) checkContextKeyType(x *ast.CallExpr) {
+	sel, ok := x.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	pkg, ok := sel.X.(*ast.Ident)
+	if !ok || pkg.Name != "context" {
+		return
+	}
+	if sel.Sel.Name != "WithValue" {
+		return
+	}
+
+	// key is second argument to context.WithValue
+	if len(x.Args) != 3 {
+		return
+	}
+	key := f.pkg.typesInfo.Types[x.Args[1]]
+
+	if _, ok := key.Type.(*types.Basic); ok {
+		f.errorf(x, 1.0, category("context"), fmt.Sprintf("should not use basic type %s as key in context.WithValue", key.Type))
+	}
+}
+
+// lintContextArgs examines function declarations that contain an
+// argument with a type of context.Context
+// It complains if that argument isn't the first parameter.
+func (f *file) lintContextArgs() {
+	f.walk(func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || len(fn.Type.Params.List) <= 1 {
+			return true
+		}
+		// A context.Context should be the first parameter of a function.
+		// Flag any that show up after the first.
+		for _, arg := range fn.Type.Params.List[1:] {
+			if isPkgDot(arg.Type, "context", "Context") {
+				f.errorf(fn, 0.9, link("https://golang.org/pkg/context/"), category("arg-order"), "context.Context should be the first parameter of a function")
+				break // only flag one
+			}
+		}
+		return true
+	})
+}
+
+// receiverType returns the named type of the method receiver, sans "*",
+// or "invalid-type" if fn.Recv is ill formed.
 func receiverType(fn *ast.FuncDecl) string {
 	switch e := fn.Recv.List[0].Type.(type) {
 	case *ast.Ident:
 		return e.Name
 	case *ast.StarExpr:
-		return e.X.(*ast.Ident).Name
+		if id, ok := e.X.(*ast.Ident); ok {
+			return id.Name
+		}
 	}
-	panic(fmt.Sprintf("unknown method receiver AST node type %T", fn.Recv.List[0].Type))
+	// The parser accepts much more than just the legal forms.
+	return "invalid-type"
 }
 
 func (f *file) walk(fn func(ast.Node) bool) {
