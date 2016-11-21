@@ -5,6 +5,7 @@ build:
         name: copy source
         code: |
           mkdir -p $GOPATH/src/github.com/haruyama
+          rm -rf $GOPATH/src/github.com/haruyama/golintx
           cp -ar $WERCKER_SOURCE_DIR/ $GOPATH/src/github.com/haruyama/golintx
     - script:
         name: glide i
