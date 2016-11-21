@@ -454,7 +454,6 @@ func (f *file) lintBlankImports() {
 
 // lintImports examines import blocks.
 func (f *file) lintImports() {
-
 	for i, is := range f.f.Imports {
 		_ = i
 		if is.Name != nil && is.Name.Name == "." && !f.isTest() {
