@@ -49,7 +49,7 @@ func main() {
 		var dirsRun, filesRun, pkgRun bool
 		args := make([]string, 0, flag.NArg())
 		for _, arg := range flag.Args() {
-			if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-4]) {
+			if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-len("/...")]) {
 				dirsRun = true
 				for _, dirname := range allPackagesInFS(arg) {
 					args = append(args, dirname)
