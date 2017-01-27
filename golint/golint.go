@@ -43,10 +43,10 @@ func main() {
 	case 0:
 		lintDir(".")
 	default:
-		// dirsRun and filesRun indicate whether the golint is applied to directory
-		// or file targets. The distinction affects which checks are run. If both
-		// are false, the golint is appplied to package targets.
-		var dirsRun, filesRun bool
+		// dirsRun, filesRun and pkgRun indicate whether the golint is applied to
+		// directory, file or package targets. The distinction affects which checks
+		// are run. It doens't allow to mix target types.
+		var dirsRun, filesRun, pkgRun bool
 		args := make([]string, 0, flag.NArg())
 		for _, arg := range flag.Args() {
 			if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-4]) {
@@ -61,23 +61,24 @@ func main() {
 				filesRun = true
 				args = append(args, arg)
 			} else {
+				pkgRun = true
 				args = append(args, arg)
 			}
 		}
 		switch {
-		case dirsRun && filesRun:
-			usage()
-			os.Exit(2)
-		case dirsRun:
+		case dirsRun && !filesRun && !pkgRun:
 			for _, dir := range args {
 				lintDir(dir)
 			}
-		case filesRun:
+		case filesRun && !dirsRun && !pkgRun:
 			lintFiles(args...)
-		default:
+		case pkgRun && !filesRun && !dirsRun:
 			for _, pkg := range importPaths(args) {
 				lintPackage(pkg)
 			}
+		default:
+			usage()
+			os.Exit(2)
 		}
 	}
 
