@@ -28,9 +28,9 @@ var (
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\tgolint [flags] # runs on package in current directory\n")
-	fmt.Fprintf(os.Stderr, "\tgolint [flags] package\n")
-	fmt.Fprintf(os.Stderr, "\tgolint [flags] directory\n")
-	fmt.Fprintf(os.Stderr, "\tgolint [flags] files... # must be a single package\n")
+	fmt.Fprintf(os.Stderr, "\tgolint [flags] [packages]\n")
+	fmt.Fprintf(os.Stderr, "\tgolint [flags] [directories] # where a '/...' suffix includes all sub-directories\n")
+	fmt.Fprintf(os.Stderr, "\tgolint [flags] [files] # must be a single package\n")
 	fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
 }
@@ -42,23 +42,44 @@ func main() {
 	switch flag.NArg() {
 	case 0:
 		lintDir(".")
-	case 1:
-		arg := flag.Arg(0)
-		if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-4]) {
-			for _, dirname := range allPackagesInFS(arg) {
-				lintDir(dirname)
-			}
-		} else if isDir(arg) {
-			lintDir(arg)
-		} else if exists(arg) {
-			lintFiles(arg)
-		} else {
-			for _, pkgname := range importPaths([]string{arg}) {
-				lintPackage(pkgname)
+	default:
+		// dirsRun, filesRun and pkgRun indicate whether the golint is applied to
+		// directory, file or package targets. The distinction affects which checks
+		// are run. It doens't allow to mix target types.
+		var dirsRun, filesRun, pkgRun bool
+		args := make([]string, 0, flag.NArg())
+		for _, arg := range flag.Args() {
+			if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-len("/...")]) {
+				dirsRun = true
+				for _, dirname := range allPackagesInFS(arg) {
+					args = append(args, dirname)
+				}
+			} else if isDir(arg) {
+				dirsRun = true
+				args = append(args, arg)
+			} else if exists(arg) {
+				filesRun = true
+				args = append(args, arg)
+			} else {
+				pkgRun = true
+				args = append(args, arg)
 			}
 		}
-	default:
-		lintFiles(flag.Args()...)
+		switch {
+		case dirsRun && !filesRun && !pkgRun:
+			for _, dir := range args {
+				lintDir(dir)
+			}
+		case filesRun && !dirsRun && !pkgRun:
+			lintFiles(args...)
+		case pkgRun && !filesRun && !dirsRun:
+			for _, pkg := range importPaths(args) {
+				lintPackage(pkg)
+			}
+		default:
+			usage()
+			os.Exit(2)
+		}
 	}
 
 	if *setExitStatus && suggestions > 0 {
