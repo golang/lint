@@ -1414,7 +1414,7 @@ func (f *file) checkContextKeyType(x *ast.CallExpr) {
 	}
 	key := f.pkg.typesInfo.Types[x.Args[1]]
 
-	if _, ok := key.Type.(*types.Basic); ok {
+	if ktyp, ok := key.Type.(*types.Basic); ok && ktyp.Kind() != types.Invalid {
 		f.errorf(x, 1.0, category("context"), fmt.Sprintf("should not use basic type %s as key in context.WithValue", key.Type))
 	}
 }
