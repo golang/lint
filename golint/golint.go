@@ -35,6 +35,10 @@ func usage() {
 	flag.PrintDefaults()
 }
 
+func init() {
+	build.Default.UseAllFiles = true
+}
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()
