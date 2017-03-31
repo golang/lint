@@ -21,11 +21,17 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/nicksnyder/go-i18n/i18n"
 )
 
 var lintMatch = flag.String("lint.match", "", "restrict testdata matches to this pattern")
 
 func TestAll(t *testing.T) {
+
+	i18n.MustLoadTranslationFile("./translation/" + "en-us.all.json")
+	T, _ := i18n.Tfunc("en-us")
+
 	l := new(Linter)
 	rx, err := regexp.Compile(*lintMatch)
 	if err != nil {
@@ -56,7 +62,7 @@ func TestAll(t *testing.T) {
 			continue
 		}
 
-		ps, err := l.Lint(fi.Name(), src)
+		ps, err := l.Lint(fi.Name(), src, T)
 		if err != nil {
 			t.Errorf("Linting %s: %v", fi.Name(), err)
 			continue

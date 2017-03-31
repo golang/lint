@@ -17,12 +17,15 @@ import (
 	"strings"
 
 	"github.com/golang/lint"
+	"github.com/nicksnyder/go-i18n/i18n"
 )
 
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	locale        = flag.String("locale", "en-us", "set the locale for error message")
 	suggestions   int
+	T             i18n.TranslateFunc
 )
 
 func usage() {
@@ -38,6 +41,11 @@ func usage() {
 func main() {
 	flag.Usage = usage
 	flag.Parse()
+
+	fmt.Println(os.Getwd())
+
+	i18n.MustLoadTranslationFile("translation/" + *locale + ".all.json")
+	T, _ = i18n.Tfunc(*locale)
 
 	if flag.NArg() == 0 {
 		lintDir(".")
@@ -87,6 +95,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Found %d lint suggestions; failing.\n", suggestions)
 		os.Exit(1)
 	}
+
 }
 
 func isDir(filename string) bool {

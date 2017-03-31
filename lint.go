@@ -22,6 +22,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/nicksnyder/go-i18n/i18n"
+
 	"golang.org/x/tools/go/gcexportdata"
 )
 
@@ -74,13 +76,13 @@ func (p byPosition) Less(i, j int) bool {
 }
 
 // Lint lints src.
-func (l *Linter) Lint(filename string, src []byte) ([]Problem, error) {
-	return l.LintFiles(map[string][]byte{filename: src})
+func (l *Linter) Lint(filename string, src []byte, T i18n.TranslateFunc) ([]Problem, error) {
+	return l.LintFiles(map[string][]byte{filename: src}, T)
 }
 
 // LintFiles lints a set of files of a single package.
 // The argument is a map of filename to source.
-func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
+func (l *Linter) LintFiles(files map[string][]byte, T i18n.TranslateFunc) ([]Problem, error) {
 	if len(files) == 0 {
 		return nil, nil
 	}
@@ -105,6 +107,7 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 			fset:     pkg.fset,
 			src:      src,
 			filename: filename,
+			trad:     T,
 		}
 	}
 	return pkg.lint(), nil
@@ -165,6 +168,7 @@ type file struct {
 	fset     *token.FileSet
 	src      []byte
 	filename string
+	trad     i18n.TranslateFunc
 }
 
 func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") }
@@ -391,17 +395,17 @@ func (f *file) lintPackageComment() {
 	}
 
 	if f.f.Doc == nil {
-		f.errorf(f.f, 0.2, link(ref), category("comments"), "should have a package comment, unless it's in another file for this package")
+		f.errorf(f.f, 0.2, link(ref), category("comments"), f.trad("should have a package comment, unless it's in another file for this package"))
 		return
 	}
 	s := f.f.Doc.Text()
 	if ts := strings.TrimLeft(s, " \t"); ts != s {
-		f.errorf(f.f.Doc, 1, link(ref), category("comments"), "package comment should not have leading space")
+		f.errorf(f.f.Doc, 1, link(ref), category("comments"), f.trad("package comment should not have leading space"))
 		s = ts
 	}
 	// Only non-main packages need to keep to this form.
 	if !f.pkg.main && !strings.HasPrefix(s, prefix) {
-		f.errorf(f.f.Doc, 1, link(ref), category("comments"), `package comment should be of the form "%s..."`, prefix)
+		f.errorf(f.f.Doc, 1, link(ref), category("comments"), f.trad(`package comment should be of the form "%s..."`), prefix)
 	}
 }
 
@@ -432,7 +436,7 @@ func (f *file) lintBlankImports() {
 		// This is the first blank import of a group.
 		if imp.Doc == nil && imp.Comment == nil {
 			ref := ""
-			f.errorf(imp, 1, link(ref), category("imports"), "a blank import should be only in a main or test package, or have a comment justifying it")
+			f.errorf(imp, 1, link(ref), category("imports"), f.trad("a blank import should be only in a main or test package, or have a comment justifying it"))
 		}
 	}
 }
@@ -442,7 +446,7 @@ func (f *file) lintImports() {
 	for i, is := range f.f.Imports {
 		_ = i
 		if is.Name != nil && is.Name.Name == "." && !f.isTest() {
-			f.errorf(is, 1, link(styleGuideBase+"#import-dot"), category("imports"), "should not use dot imports")
+			f.errorf(is, 1, link(styleGuideBase+"#import-dot"), category("imports"), f.trad("should not use dot imports"))
 		}
 
 	}
@@ -519,7 +523,7 @@ var knownNameExceptions = map[string]bool{
 func (f *file) lintNames() {
 	// Package names need slightly different handling than other names.
 	if strings.Contains(f.f.Name.Name, "_") && !strings.HasSuffix(f.f.Name.Name, "_test") {
-		f.errorf(f.f, 1, link("http://golang.org/doc/effective_go.html#package-names"), category("naming"), "don't use an underscore in package name")
+		f.errorf(f.f, 1, link("http://golang.org/doc/effective_go.html#package-names"), category("naming"), f.trad("don't use an underscore in package name"))
 	}
 
 	check := func(id *ast.Ident, thing string) {
@@ -532,12 +536,12 @@ func (f *file) lintNames() {
 
 		// Handle two common styles from other languages that don't belong in Go.
 		if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
-			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
+			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), f.trad("don't use ALL_CAPS in Go names; use CamelCase"))
 			return
 		}
 		if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
 			should := string(id.Name[1]+'a'-'A') + id.Name[2:]
-			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
+			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), f.trad("don't use leading k in Go names; %s %s should be %s"), thing, id.Name, should)
 		}
 
 		should := lintName(id.Name)
@@ -546,10 +550,10 @@ func (f *file) lintNames() {
 		}
 
 		if len(id.Name) > 2 && strings.Contains(id.Name[1:], "_") {
-			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
+			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), f.trad("don't use underscores in Go names; %s %s should be %s"), thing, id.Name, should)
 			return
 		}
-		f.errorf(id, 0.8, link(styleGuideBase+"#initialisms"), category("naming"), "%s %s should be %s", thing, id.Name, should)
+		f.errorf(id, 0.8, link(styleGuideBase+"#initialisms"), category("naming"), f.trad("%s %s should be %s"), thing, id.Name, should)
 	}
 	checkList := func(fl *ast.FieldList, thing string) {
 		if fl == nil {
@@ -766,7 +770,7 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 		return
 	}
 	if doc == nil {
-		f.errorf(t, 1, link(docCommentsLink), category("comments"), "exported type %v should have comment or be unexported", t.Name)
+		f.errorf(t, 1, link(docCommentsLink), category("comments"), f.trad("exported type %v should have comment or be unexported"), t.Name)
 		return
 	}
 
@@ -779,7 +783,7 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 		}
 	}
 	if !strings.HasPrefix(s, t.Name.Name+" ") {
-		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), f.trad(`comment on exported type %v should be of the form "%v ..." (with optional leading article)`), t.Name, t.Name)
 	}
 }
 
@@ -821,13 +825,13 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 		name = recv + "." + name
 	}
 	if fn.Doc == nil {
-		f.errorf(fn, 1, link(docCommentsLink), category("comments"), "exported %s %s should have comment or be unexported", kind, name)
+		f.errorf(fn, 1, link(docCommentsLink), category("comments"), f.trad("exported %s %s should have comment or be unexported"), kind, name)
 		return
 	}
 	s := fn.Doc.Text()
 	prefix := fn.Name.Name + " "
 	if !strings.HasPrefix(s, prefix) {
-		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), f.trad(`comment on exported %s %s should be of the form "%s..."`), kind, name, prefix)
 	}
 }
 
@@ -844,7 +848,7 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 		// Check that none are exported except for the first.
 		for _, n := range vs.Names[1:] {
 			if ast.IsExported(n.Name) {
-				f.errorf(vs, 1, category("comments"), "exported %s %s should have its own declaration", kind, n.Name)
+				f.errorf(vs, 1, category("comments"), f.trad("exported %s %s should have its own declaration"), kind, n.Name)
 				return
 			}
 		}
@@ -864,7 +868,7 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 		if kind == "const" && gd.Lparen.IsValid() {
 			block = " (or a comment on this block)"
 		}
-		f.errorf(vs, 1, link(docCommentsLink), category("comments"), "exported %s %s should have comment%s or be unexported", kind, name, block)
+		f.errorf(vs, 1, link(docCommentsLink), category("comments"), f.trad("exported %s %s should have comment%s or be unexported"), kind, name, block)
 		genDeclMissingComments[gd] = true
 		return
 	}
@@ -880,7 +884,7 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	}
 	prefix := name + " "
 	if !strings.HasPrefix(doc.Text(), prefix) {
-		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), f.trad(`comment on exported %s %s should be of the form "%s..."`), kind, name, prefix)
 	}
 }
 
@@ -905,7 +909,7 @@ func (f *file) checkStutter(id *ast.Ident, thing string) {
 	// the it's starting a new word and thus this name stutters.
 	rem := name[len(pkg):]
 	if next, _ := utf8.DecodeRuneInString(rem); next == '_' || unicode.IsUpper(next) {
-		f.errorf(id, 0.8, link(styleGuideBase+"#package-names"), category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
+		f.errorf(id, 0.8, link(styleGuideBase+"#package-names"), category("naming"), f.trad("%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s"), thing, pkg, name, rem)
 	}
 }
 
@@ -960,7 +964,7 @@ func (f *file) lintVarDecls() {
 				zero = true
 			}
 			if zero {
-				f.errorf(rhs, 0.9, category("zero-value"), "should drop = %s from declaration of var %s; it is the zero value", f.render(rhs), v.Names[0])
+				f.errorf(rhs, 0.9, category("zero-value"), f.trad("should drop = %s from declaration of var %s; it is the zero value"), f.render(rhs), v.Names[0])
 				return false
 			}
 			lhsTyp := f.pkg.typeOf(v.Type)
@@ -991,7 +995,7 @@ func (f *file) lintVarDecls() {
 				return false
 			}
 
-			f.errorf(v.Type, 0.8, category("type-inference"), "should omit type %s from declaration of var %s; it will be inferred from the right-hand side", f.render(v.Type), v.Names[0])
+			f.errorf(v.Type, 0.8, category("type-inference"), f.trad("should omit type %s from declaration of var %s; it will be inferred from the right-hand side"), f.render(v.Type), v.Names[0])
 			return false
 		}
 		return true
@@ -1042,7 +1046,7 @@ func (f *file) lintElses() {
 			if shortDecl {
 				extra = " (move short variable declaration to its own line if necessary)"
 			}
-			f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#indent-error-flow"), category("indent"), "if block ends with a return statement, so drop this else and outdent its block"+extra)
+			f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#indent-error-flow"), category("indent"), f.trad("if block ends with a return statement, so drop this else and outdent its block")+extra)
 		}
 		return true
 	})
@@ -1064,7 +1068,7 @@ func (f *file) lintRanges() {
 			return true
 		}
 
-		p := f.errorf(rs.Value, 1, category("range-loop"), "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
+		p := f.errorf(rs.Value, 1, category("range-loop"), f.trad("should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`"), f.render(rs.Key), rs.Tok)
 
 		newRS := *rs // shallow copy
 		newRS.Value = nil
@@ -1101,7 +1105,7 @@ func (f *file) lintErrorf() {
 		if isTestingError {
 			errorfPrefix = f.render(se.X)
 		}
-		p := f.errorf(node, 1, category("errors"), "should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)", f.render(se), errorfPrefix)
+		p := f.errorf(node, 1, category("errors"), f.trad("should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)"), f.render(se), errorfPrefix)
 
 		m := f.srcLineWithMatch(ce, `^(.*)`+f.render(se)+`\(fmt\.Sprintf\((.*)\)\)(.*)$`)
 		if m != nil {
@@ -1138,7 +1142,7 @@ func (f *file) lintErrors() {
 				prefix = "Err"
 			}
 			if !strings.HasPrefix(id.Name, prefix) {
-				f.errorf(id, 0.9, category("naming"), "error var %s should have name of the form %sFoo", id.Name, prefix)
+				f.errorf(id, 0.9, category("naming"), f.trad("error var %s should have name of the form %sFoo"), id.Name, prefix)
 			}
 		}
 	}
@@ -1194,7 +1198,7 @@ func (f *file) lintErrorStrings() {
 		}
 
 		f.errorf(str, conf, link(styleGuideBase+"#error-strings"), category("errors"),
-			"error strings should not be capitalized or end with punctuation or a newline")
+			f.trad("error strings should not be capitalized or end with punctuation or a newline"))
 		return true
 	})
 }
@@ -1215,16 +1219,16 @@ func (f *file) lintReceiverNames() {
 		name := names[0].Name
 		const ref = styleGuideBase + "#receiver-names"
 		if name == "_" {
-			f.errorf(n, 1, link(ref), category("naming"), `receiver name should not be an underscore`)
+			f.errorf(n, 1, link(ref), category("naming"), f.trad(`receiver name should not be an underscore`))
 			return true
 		}
 		if name == "this" || name == "self" {
-			f.errorf(n, 1, link(ref), category("naming"), `receiver name should be a reflection of its identity; don't use generic names such as "this" or "self"`)
+			f.errorf(n, 1, link(ref), category("naming"), f.trad(`receiver name should be a reflection of its identity; don't use generic names such as "this" or "self"`))
 			return true
 		}
 		recv := receiverType(fn)
 		if prev, ok := typeReceiver[recv]; ok && prev != name {
-			f.errorf(n, 1, link(ref), category("naming"), "receiver name %s should be consistent with previous receiver name %s for %s", name, prev, recv)
+			f.errorf(n, 1, link(ref), category("naming"), f.trad("receiver name %s should be consistent with previous receiver name %s for %s"), name, prev, recv)
 			return true
 		}
 		typeReceiver[recv] = name
@@ -1255,7 +1259,7 @@ func (f *file) lintIncDec() {
 		default:
 			return true
 		}
-		f.errorf(as, 0.8, category("unary-op"), "should replace %s with %s%s", f.render(as), f.render(as.Lhs[0]), suffix)
+		f.errorf(as, 0.8, category("unary-op"), f.trad("should replace %s with %s%s"), f.render(as), f.render(as.Lhs[0]), suffix)
 		return true
 	})
 }
@@ -1276,7 +1280,7 @@ func (f *file) lintErrorReturn() {
 		// Flag any error parameters found before the last.
 		for _, r := range ret[:len(ret)-1] {
 			if isIdent(r.Type, "error") {
-				f.errorf(fn, 0.9, category("arg-order"), "error should be the last type when returning multiple items")
+				f.errorf(fn, 0.9, category("arg-order"), f.trad("error should be the last type when returning multiple items"))
 				break // only flag one
 			}
 		}
@@ -1313,7 +1317,7 @@ func (f *file) lintUnexportedReturn() {
 				continue
 			}
 			f.errorf(ret.Type, 0.8, category("unexported-type-in-api"),
-				"exported %s %s returns unexported type %s, which can be annoying to use",
+				f.trad("exported %s %s returns unexported type %s, which can be annoying to use"),
 				thing, fn.Name.Name, typ)
 			break // only flag one
 		}
@@ -1377,7 +1381,7 @@ func (f *file) lintTimeNames() {
 			if suffix == "" {
 				continue
 			}
-			f.errorf(v, 0.9, category("time"), "var %s is of type %v; don't use unit-specific suffix %q", name.Name, origTyp, suffix)
+			f.errorf(v, 0.9, category("time"), f.trad("var %s is of type %v; don't use unit-specific suffix %q"), name.Name, origTyp, suffix)
 		}
 		return true
 	})
@@ -1419,7 +1423,7 @@ func (f *file) checkContextKeyType(x *ast.CallExpr) {
 	key := f.pkg.typesInfo.Types[x.Args[1]]
 
 	if ktyp, ok := key.Type.(*types.Basic); ok && ktyp.Kind() != types.Invalid {
-		f.errorf(x, 1.0, category("context"), fmt.Sprintf("should not use basic type %s as key in context.WithValue", key.Type))
+		f.errorf(x, 1.0, category("context"), fmt.Sprintf(f.trad("should not use basic type %s as key in context.WithValue"), key.Type))
 	}
 }
 
@@ -1436,7 +1440,7 @@ func (f *file) lintContextArgs() {
 		// Flag any that show up after the first.
 		for _, arg := range fn.Type.Params.List[1:] {
 			if isPkgDot(arg.Type, "context", "Context") {
-				f.errorf(fn, 0.9, link("https://golang.org/pkg/context/"), category("arg-order"), "context.Context should be the first parameter of a function")
+				f.errorf(fn, 0.9, link("https://golang.org/pkg/context/"), category("arg-order"), f.trad("context.Context should be the first parameter of a function"))
 				break // only flag one
 			}
 		}
