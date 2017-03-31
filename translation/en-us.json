@@ -1,0 +1,135 @@
+[
+  {
+      "id":"should have a package comment, unless it's in another file for this package",
+      "translation":"should have a package comment, unless it's in another file for this package"
+    },
+    {
+      "id":"package comment should not have leading space",
+      "translation":"package comment should not have leading space"
+    },
+    {
+      "id":"package comment should be of the form",
+      "translation":"package comment should be of the form \"%s...\""
+    },
+    {
+      "id":"a blank import should be only in a main or test package, or have a comment justifying it",
+      "translation":"a blank import should be only in a main or test package, or have a comment justifying it"
+    },
+    {
+      "id":"should not use dot imports",
+      "translation":"should not use dot imports"
+    },
+    {
+      "id":"don't use an underscore in package name",
+      "translation":"don't use an underscore in package name"
+    },
+    {
+      "id":"don't use ALL_CAPS in Go names; use CamelCase",
+      "translation":"don't use ALL_CAPS in Go names; use CamelCase"
+  },
+    {
+      "id":"don't use leading k in Go names; %s %s should be %s",
+      "translation":"don't use leading k in Go names; %s %s should be %s"
+    },
+    {
+      "id":  "don't use underscores in Go names; %s %s should be %s",
+      "translation":  "don't use underscores in Go names; %s %s should be %s"
+  },
+    {
+      "id":  "%s %s should be %s",
+      "translation":  "%s %s should be %s"
+    },
+    {
+      "id":"exported type %v should have comment or be unexported",
+      "translation":"exported type %v should have comment or be unexported"
+    },
+    {
+      "id":"comment on exported type %v should be of the form \"%v ...\" (with optional leading article)",
+      "translation":"comment on exported type %v should be of the form \"%v ...\" (with optional leading article)"
+    },
+
+    {
+      "id":"exported %s %s should have comment or be unexported",
+      "translation":"exported %s %s should have comment or be unexported"
+    },
+    {
+      "id":"comment on exported %s %s should be of the form \"%s...\"",
+      "translation":"comment on exported %s %s should be of the form \"%s...\""
+    },
+    {
+      "id":"exported %s %s should have its own declaration",
+      "translation":"exported %s %s should have its own declaration"
+    },
+    {
+      "id":"exported %s %s should have comment%s or be unexported",
+      "translation":"exported %s %s should have comment%s or be unexported"
+    },
+    {
+      "id":"%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s",
+      "translation":"%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s"
+    },
+    {
+      "id":"should drop = %s from declaration of var %s; it is the zero value",
+      "translation":"should drop = %s from declaration of var %s; it is the zero value"
+    },
+    {
+      "id":"should omit type %s from declaration of var %s; it will be inferred from the right-hand side",
+      "translation":"should omit type %s from declaration of var %s; it will be inferred from the right-hand side"
+    },
+    {
+      "id":"if block ends with a return statement, so drop this else and outdent its block",
+      "translation":"if block ends with a return statement, so drop this else and outdent its block"
+    },
+    {
+      "id":"should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`",
+      "translation":"should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`"
+    },
+    {
+      "id":"should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)",
+      "translation":"should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)"
+    },
+    {
+      "id":"error var %s should have name of the form %sFoo",
+      "translation":"error var %s should have name of the form %sFoo"
+    },
+    {
+      "id":"error strings should not be capitalized or end with punctuation or a newline",
+      "translation":"error strings should not be capitalized or end with punctuation or a newline"
+    },
+    {
+      "id":"receiver name should not be an underscore",
+      "translation":"receiver name should not be an underscore"
+    },
+    {
+      "id":"receiver name should be a reflection of its identity; don't use generic names such as \"this\" or \"self\"",
+      "translation":"receiver name should be a reflection of its identity; don't use generic names such as \"this\" or \"self\""
+    },
+    {
+      "id":"receiver name %s should be consistent with previous receiver name %s for %s",
+      "translation":"receiver name %s should be consistent with previous receiver name %s for %s"
+    },
+    {
+      "id":"should replace %s with %s%s",
+      "translation":"should replace %s with %s%s"
+    },
+    {
+      "id":"error should be the last type when returning multiple items",
+      "translation":"error should be the last type when returning multiple items"
+    },
+    {
+      "id":"exported %s %s returns unexported type %s, which can be annoying to use",
+      "translation":"exported %s %s returns unexported type %s, which can be annoying to use"
+    },
+    {
+      "id":"var %s is of type %v; don't use unit-specific suffix %q",
+      "translation":"var %s is of type %v; don't use unit-specific suffix %q"
+    },
+    {
+      "id":"should not use basic type %s as key in context.WithValue",
+      "translation":"should not use basic type %s as key in context.WithValue"
+    },
+    {
+      "id":"context.Context should be the first parameter of a function",
+      "translation":"context.Context should be the first parameter of a function"
+    }
+]

@@ -1,0 +1,101 @@
+{
+  "%s %s should be %s": {
+    "other": "%s %s should be %s"
+  },
+  "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s": {
+    "other": "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s"
+  },
+  "a blank import should be only in a main or test package, or have a comment justifying it": {
+    "other": "a blank import should be only in a main or test package, or have a comment justifying it"
+  },
+  "comment on exported %s %s should be of the form \"%s...\"": {
+    "other": "comment on exported %s %s should be of the form \"%s...\""
+  },
+  "comment on exported type %v should be of the form \"%v ...\" (with optional leading article)": {
+    "other": "comment on exported type %v should be of the form \"%v ...\" (with optional leading article)"
+  },
+  "context.Context should be the first parameter of a function": {
+    "other": "context.Context should be the first parameter of a function"
+  },
+  "don't use ALL_CAPS in Go names; use CamelCase": {
+    "other": "don't use ALL_CAPS in Go names; use CamelCase"
+  },
+  "don't use an underscore in package name": {
+    "other": "don't use an underscore in package name"
+  },
+  "don't use leading k in Go names; %s %s should be %s": {
+    "other": "don't use leading k in Go names; %s %s should be %s"
+  },
+  "don't use underscores in Go names; %s %s should be %s": {
+    "other": "don't use underscores in Go names; %s %s should be %s"
+  },
+  "error should be the last type when returning multiple items": {
+    "other": "error should be the last type when returning multiple items"
+  },
+  "error strings should not be capitalized or end with punctuation or a newline": {
+    "other": "error strings should not be capitalized or end with punctuation or a newline"
+  },
+  "error var %s should have name of the form %sFoo": {
+    "other": "error var %s should have name of the form %sFoo"
+  },
+  "exported %s %s returns unexported type %s, which can be annoying to use": {
+    "other": "exported %s %s returns unexported type %s, which can be annoying to use"
+  },
+  "exported %s %s should have comment or be unexported": {
+    "other": "exported %s %s should have comment or be unexported"
+  },
+  "exported %s %s should have comment%s or be unexported": {
+    "other": "exported %s %s should have comment%s or be unexported"
+  },
+  "exported %s %s should have its own declaration": {
+    "other": "exported %s %s should have its own declaration"
+  },
+  "exported type %v should have comment or be unexported": {
+    "other": "exported type %v should have comment or be unexported"
+  },
+  "if block ends with a return statement, so drop this else and outdent its block": {
+    "other": "if block ends with a return statement, so drop this else and outdent its block"
+  },
+  "package comment should be of the form": {
+    "other": "package comment should be of the form \"%s...\""
+  },
+  "package comment should not have leading space": {
+    "other": "package comment should not have leading space"
+  },
+  "receiver name %s should be consistent with previous receiver name %s for %s": {
+    "other": "receiver name %s should be consistent with previous receiver name %s for %s"
+  },
+  "receiver name should be a reflection of its identity; don't use generic names such as \"this\" or \"self\"": {
+    "other": "receiver name should be a reflection of its identity; don't use generic names such as \"this\" or \"self\""
+  },
+  "receiver name should not be an underscore": {
+    "other": "receiver name should not be an underscore"
+  },
+  "should drop = %s from declaration of var %s; it is the zero value": {
+    "other": "should drop = %s from declaration of var %s; it is the zero value"
+  },
+  "should have a package comment, unless it's in another file for this package": {
+    "other": "should have a package comment, unless it's in another file for this package"
+  },
+  "should not use basic type %s as key in context.WithValue": {
+    "other": "should not use basic type %s as key in context.WithValue"
+  },
+  "should not use dot imports": {
+    "other": "should not use dot imports"
+  },
+  "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`": {
+    "other": "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`"
+  },
+  "should omit type %s from declaration of var %s; it will be inferred from the right-hand side": {
+    "other": "should omit type %s from declaration of var %s; it will be inferred from the right-hand side"
+  },
+  "should replace %s with %s%s": {
+    "other": "should replace %s with %s%s"
+  },
+  "should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)": {
+    "other": "should replace %s(fmt.Sprintf(...)) with %s.Errorf(...)"
+  },
+  "var %s is of type %v; don't use unit-specific suffix %q": {
+    "other": "var %s is of type %v; don't use unit-specific suffix %q"
+  }
+}
