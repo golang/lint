@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"go/build"
 	"io/ioutil"
-	//"lint"
 	"os"
 	"path/filepath"
 	"strings"
