@@ -53,6 +53,9 @@ need you to fill out
 [a short form](https://developers.google.com/open-source/cla/individual)
 before we can accept your contribution.
 
+For translate use the package [goi18n] (https://github.com/nicksnyder/go-i18n)
+
+
 ## Vim
 
 Add this to your ~/.vimrc:
