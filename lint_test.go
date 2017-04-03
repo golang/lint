@@ -30,7 +30,7 @@ var lintMatch = flag.String("lint.match", "", "restrict testdata matches to this
 func TestAll(t *testing.T) {
 
 	i18n.MustLoadTranslationFile("./translation/" + "en-us.all.json")
-	T, _ := i18n.Tfunc("en-us")
+	T, _ = i18n.Tfunc("en-us")
 
 	l := new(Linter)
 	rx, err := regexp.Compile(*lintMatch)
@@ -62,7 +62,7 @@ func TestAll(t *testing.T) {
 			continue
 		}
 
-		ps, err := l.Lint(fi.Name(), src, T)
+		ps, err := l.Lint(fi.Name(), src)
 		if err != nil {
 			t.Errorf("Linting %s: %v", fi.Name(), err)
 			continue

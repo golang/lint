@@ -12,11 +12,12 @@ import (
 	"fmt"
 	"go/build"
 	"io/ioutil"
+	"lint"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/lint"
+	//"github.com/golang/lint"
 	"github.com/nicksnyder/go-i18n/i18n"
 )
 
@@ -25,7 +26,6 @@ var (
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
 	locale        = flag.String("locale", "en-us", "set the locale for error message")
 	suggestions   int
-	T             i18n.TranslateFunc
 )
 
 func usage() {
@@ -42,10 +42,8 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	fmt.Println(os.Getwd())
-
-	i18n.MustLoadTranslationFile("translation/" + *locale + ".all.json")
-	T, _ = i18n.Tfunc(*locale)
+	i18n.MustLoadTranslationFile("./translation/" + "en-us.all.json")
+	lint.T, _ = i18n.Tfunc(*locale)
 
 	if flag.NArg() == 0 {
 		lintDir(".")
