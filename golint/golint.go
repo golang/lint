@@ -41,7 +41,7 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	i18n.MustLoadTranslationFile("./translation/" + "en-us.all.json")
+	i18n.MustLoadTranslationFile("./translation/" + *locale + ".all.json")
 	lint.T, _ = i18n.Tfunc(*locale)
 
 	if flag.NArg() == 0 {
