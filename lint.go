@@ -27,6 +27,7 @@ import (
 	"golang.org/x/tools/go/gcexportdata"
 )
 
+// T The function for translate message
 var T i18n.TranslateFunc
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"

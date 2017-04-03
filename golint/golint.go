@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"go/build"
 	"io/ioutil"
-	"lint"
+	//"lint"
 	"os"
 	"path/filepath"
 	"strings"
 
-	//"github.com/golang/lint"
+	"github.com/golang/lint"
 	"github.com/nicksnyder/go-i18n/i18n"
 )
 
