@@ -57,7 +57,9 @@ before we can accept your contribution.
 
 Add this to your ~/.vimrc:
 
+```vim
     set rtp+=$GOPATH/src/github.com/golang/lint/misc/vim
+```
 
 If you have multiple entries in your GOPATH, replace `$GOPATH` with the right value.
 
@@ -65,15 +67,17 @@ Running `:Lint` will run golint on the current file and populate the quickfix li
 
 Optionally, add this to your `~/.vimrc` to automatically run `golint` on `:w`
 
+```vim
     autocmd BufWritePost,FileWritePost *.go execute 'Lint' | cwindow
-
+```
 
 ## Emacs
 
 Add this to your `.emacs` file:
-
+```emacs
     (add-to-list 'load-path (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs"))
     (require 'golint)
+```
 
 If you have multiple entries in your GOPATH, replace `$GOPATH` with the right value.
 
