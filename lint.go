@@ -188,6 +188,7 @@ func (f *file) lint() {
 	f.lintTimeNames()
 	f.lintContextKeyTypes()
 	f.lintContextArgs()
+	f.lintExportedMutex()
 }
 
 type link string
@@ -1442,6 +1443,44 @@ func (f *file) lintContextArgs() {
 		}
 		return true
 	})
+}
+
+// lintExportedMutex examines exported struct declarations.
+// It complains if any type or method from the sync package is exported.
+func (f *file) lintExportedMutex() {
+	for _, decl := range f.f.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.TYPE {
+			continue
+		}
+		for _, spec := range gd.Specs {
+			spec := spec.(*ast.TypeSpec)
+			if !spec.Name.IsExported() {
+				continue
+			}
+			s, ok := spec.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+			for _, field := range s.Fields.List {
+				if len(field.Names) > 0 && !field.Names[0].IsExported() {
+					continue // skip unexported
+				}
+				// Field is now either exported or embedded.
+				se, ok := field.Type.(*ast.SelectorExpr)
+				if !ok {
+					continue
+				}
+				// Flag any type from the sync package.
+				if isIdent(se.X, "sync") {
+					f.errorf(spec, 0.8, category("exported-sync-in-api"),
+						"exported type %s should not directly expose %s.%s or be unexported",
+						spec.Name, se.X.(*ast.Ident).Name, se.Sel.Name)
+					break // only flag one
+				}
+			}
+		}
+	}
 }
 
 // receiverType returns the named type of the method receiver, sans "*",
