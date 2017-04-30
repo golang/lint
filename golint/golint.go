@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/calebdoxsey/lint"
+	"github.com/golang/lint"
 )
 
 var (
