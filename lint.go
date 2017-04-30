@@ -188,6 +188,7 @@ func (f *file) lint() {
 	f.lintTimeNames()
 	f.lintContextKeyTypes()
 	f.lintContextArgs()
+	f.lintGoGenerateDirective()
 }
 
 type link string
@@ -1442,6 +1443,24 @@ func (f *file) lintContextArgs() {
 		}
 		return true
 	})
+}
+
+// lintGoGenerateDirective lints go:generate directives
+func (f *file) lintGoGenerateDirective() {
+	for _, cg := range f.f.Comments {
+		for _, c := range cg.List {
+			txt := c.Text
+			if !strings.HasPrefix(txt, "//") {
+				continue
+			}
+			txt = txt[2:]
+			// if there's space before go:generate, this was probably a mistake
+			if !strings.HasPrefix(txt, "go:generate") &&
+				strings.HasPrefix(strings.TrimSpace(txt), "go:generate") {
+				f.errorf(cg, 0.9, category("comments"), "go:generate directive should have no spaces between // and go:generate")
+			}
+		}
+	}
 }
 
 // receiverType returns the named type of the method receiver, sans "*",
