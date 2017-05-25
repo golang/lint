@@ -188,6 +188,7 @@ func (f *file) lint() {
 	f.lintTimeNames()
 	f.lintContextKeyTypes()
 	f.lintContextArgs()
+	f.lintDeferInForLoop()
 }
 
 type link string
@@ -1597,4 +1598,28 @@ func srcLine(src []byte, p token.Position) string {
 		hi++
 	}
 	return string(src[lo:hi])
+}
+
+// lintDeferInForLoop examines using defer in for loop.
+func (f *file) lintDeferInForLoop() {
+	var infor bool
+	var pos token.Pos
+
+	f.walk(func(n ast.Node) bool {
+		switch v := n.(type) {
+		case *ast.FuncDecl, *ast.FuncLit:
+			infor = false
+		case *ast.ForStmt:
+			infor = true
+			pos = v.End()
+		case *ast.DeferStmt:
+			if v != nil && v.Pos() > pos {
+				infor = false
+			}
+			if infor {
+				f.errorf(v, 1, category("defer"), "should not use defer in for loop")
+			}
+		}
+		return true
+	})
 }
