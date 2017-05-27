@@ -80,3 +80,13 @@ If you have multiple entries in your GOPATH, replace `$GOPATH` with the right va
 Running M-x golint will run golint on the current file.
 
 For more usage, see [Compilation-Mode](http://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation-Mode.html).
+
+## Git
+
+If you are using Git for source control, [overcommit](https://github.com/brigade/overcommit) is a fully configurable and extendable Git hook manager that includes out-of-the-box support for running golint as a Git pre-commit hook. Just include this in your `.overcommit.yml` file:
+
+```yaml
+PreCommit:
+  GoLint:
+    enabled: true
+```
