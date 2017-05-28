@@ -1454,10 +1454,11 @@ func (f *file) lintContextArgs() {
 		if !ok || len(fn.Type.Params.List) <= 1 {
 			return true
 		}
-		// A context.Context should be the first parameter of a function.
+		firstParamIsTestingT := isStarPkgDot(fn.Type.Params.List[0].Type, "testing", "T")
+		// A context.Context should be the first parameter of a function, unless the first parameter is *testing.T.
 		// Flag any that show up after the first.
 		for _, arg := range fn.Type.Params.List[1:] {
-			if isPkgDot(arg.Type, "context", "Context") {
+			if isPkgDot(arg.Type, "context", "Context") && !firstParamIsTestingT {
 				f.errorf(fn, 0.9, link("https://golang.org/pkg/context/"), category("arg-order"), "context.Context should be the first parameter of a function")
 				break // only flag one
 			}
@@ -1523,6 +1524,15 @@ func isBlank(id *ast.Ident) bool { return id != nil && id.Name == "_" }
 
 func isPkgDot(expr ast.Expr, pkg, name string) bool {
 	sel, ok := expr.(*ast.SelectorExpr)
+	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
+}
+
+func isStarPkgDot(expr ast.Expr, pkg, name string) bool {
+	star, ok := expr.(*ast.StarExpr)
+	if !ok {
+		return false
+	}
+	sel, ok := star.X.(*ast.SelectorExpr)
 	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
 }
 

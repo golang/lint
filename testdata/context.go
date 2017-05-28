@@ -5,6 +5,7 @@ package foo
 
 import (
 	"context"
+	"testing"
 )
 
 // A proper context.Context location
@@ -13,6 +14,10 @@ func x(ctx context.Context) { // ok
 
 // A proper context.Context location
 func x(ctx context.Context, s string) { // ok
+}
+
+// A proper context.Context location as well
+func x(t *testing.T, ctx context.Context, s string) { // ok
 }
 
 // An invalid context.Context location
