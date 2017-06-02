@@ -82,9 +82,6 @@ func (l *Linter) Lint(filename string, src []byte) ([]Problem, error) {
 // LintFiles lints a set of files of a single package.
 // The argument is a map of filename to source.
 func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
-	if len(files) == 0 {
-		return nil, nil
-	}
 	pkg := &pkg{
 		fset:  token.NewFileSet(),
 		files: make(map[string]*file),
@@ -110,6 +107,9 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 			src:      src,
 			filename: filename,
 		}
+	}
+	if len(pkg.files) == 0 {
+		return nil, nil
 	}
 	return pkg.lint(), nil
 }
