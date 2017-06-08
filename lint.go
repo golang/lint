@@ -851,6 +851,9 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 	if !strings.HasPrefix(s, prefix) {
 		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
 	}
+	if !strings.HasSuffix(strings.TrimSpace(s), ".") {
+		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comment-sentences"), `comment on exported %s %s should end with a period`, kind, name)
+	}
 }
 
 // lintValueSpecDoc examines package-global variables and constants.
