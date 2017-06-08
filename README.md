@@ -18,6 +18,11 @@ also supports relative import paths like `./...`. Additionally the `...`
 wildcard can be used as suffix on relative and absolute file paths to recurse
 into them.
 
+If you want filter output to supress some messages, use "grep" or another tools that allow you to filter output.
+For example, to disable notice about "type should have comment or be unexported", run:
+golint | grep -v -P "exported type [^ ]+ should have comment or be unexported"
+You can combine several greps like "golint | grep ... | grep ...", or even use "grep" to ignore some files.
+
 The output of this tool is a list of suggestions in Vim quickfix format,
 which is accepted by lots of different editors.
 
