@@ -100,12 +100,21 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 		} else if f.Name.Name != pkgName {
 			return nil, fmt.Errorf("%s is in package %s, not %s", filename, f.Name.Name, pkgName)
 		}
+		ignored := false
+		if len(f.Comments) > 0 {
+			for _, c := range f.Comments[0].List {
+				if strings.HasPrefix(c.Text, "//golint:ignore") {
+					ignored = true
+				}
+			}
+		}
 		pkg.files[filename] = &file{
 			pkg:      pkg,
 			f:        f,
 			fset:     pkg.fset,
 			src:      src,
 			filename: filename,
+			ignored:  ignored,
 		}
 	}
 	if len(pkg.files) == 0 {
@@ -187,11 +196,15 @@ type file struct {
 	fset     *token.FileSet
 	src      []byte
 	filename string
+	ignored  bool
 }
 
 func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") }
 
 func (f *file) lint() {
+	if f.ignored {
+		return
+	}
 	f.lintPackageComment()
 	f.lintImports()
 	f.lintBlankImports()
