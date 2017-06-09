@@ -1485,7 +1485,7 @@ func (f *file) lintDepreciatedConstants() {
 			suggestion := depreciatedConstants[constant]
 
 			if suggestion != "" {
-				fmt.Println(fmt.Sprintf("don't use depreciated constant %v; use %v", constant, suggestion))
+				f.errorf(node, 1.0, fmt.Sprintf("don't use depreciated constant %v; use %v", constant, suggestion))
 			}
 		}
 
