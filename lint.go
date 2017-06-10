@@ -8,6 +8,7 @@
 package golintx
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"go/ast"
@@ -22,7 +23,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"golang.org/x/tools/go/gcimporter15"
+	"golang.org/x/tools/go/gcexportdata"
 )
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
@@ -81,9 +82,6 @@ func (l *Linter) Lint(filename string, src []byte) ([]Problem, error) {
 // LintFiles lints a set of files of a single package.
 // The argument is a map of filename to source.
 func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
-	if len(files) == 0 {
-		return nil, nil
-	}
 	pkg := &pkg{
 		fset:  token.NewFileSet(),
 		files: make(map[string]*file),
@@ -100,6 +98,9 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 				return nil, err
 			}
 			parseConfig = false
+		}
+		if isGenerated(src) {
+			continue // See issue #239
 		}
 		f, err := parser.ParseFile(pkg.fset, filename, src, parser.ParseComments)
 		if err != nil {
@@ -119,11 +120,32 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 			config:   config,
 		}
 	}
+	if len(pkg.files) == 0 {
+		return nil, nil
+	}
 	ps := pkg.lint()
 	if config != nil {
 		return excludeCategories(ps, config.Exclude.Categories), nil
 	}
 	return ps, nil
+}
+
+var (
+	genHdr = []byte("// Code generated ")
+	genFtr = []byte(" DO NOT EDIT.")
+)
+
+// isGenerated reports whether the source file is generated code
+// according the rules from https://golang.org/s/generatedcode.
+func isGenerated(src []byte) bool {
+	sc := bufio.NewScanner(bytes.NewReader(src))
+	for sc.Scan() {
+		b := sc.Bytes()
+		if bytes.HasPrefix(b, genHdr) && bytes.HasSuffix(b, genFtr) && len(b) >= len(genHdr)+len(genFtr) {
+			return true
+		}
+	}
+	return false
 }
 
 // pkg represents a package being linted.
@@ -252,30 +274,15 @@ argLoop:
 	return &p.problems[len(p.problems)-1]
 }
 
-var gcImporter = gcimporter.Import
-
-// importer implements go/types.Importer{,From}.
-type importer struct {
-	impFn    func(packages map[string]*types.Package, path, srcDir string) (*types.Package, error)
-	packages map[string]*types.Package
-}
-
-func (i importer) Import(path string) (*types.Package, error) {
-	return i.impFn(i.packages, path, "")
-}
-
-func (i importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
-	return i.impFn(i.packages, path, srcDir)
+var newImporter = func(fset *token.FileSet) types.ImporterFrom {
+	return gcexportdata.NewImporter(fset, make(map[string]*types.Package))
 }
 
 func (p *pkg) typeCheck() error {
 	config := &types.Config{
 		// By setting a no-op error reporter, the type checker does as much work as possible.
-		Error: func(error) {},
-		Importer: importer{
-			impFn:    gcImporter,
-			packages: make(map[string]*types.Package),
-		},
+		Error:    func(error) {},
+		Importer: newImporter(p.fset),
 	}
 	info := &types.Info{
 		Types:  make(map[ast.Expr]types.TypeAndValue),
@@ -471,7 +478,6 @@ func (f *file) lintBlankImports() {
 
 // lintImports examines import blocks.
 func (f *file) lintImports() {
-
 	for i, is := range f.f.Imports {
 		_ = i
 		if is.Name != nil && is.Name.Name == "." && !f.isTest() {
@@ -479,7 +485,6 @@ func (f *file) lintImports() {
 		}
 
 	}
-
 }
 
 const docCommentsLink = styleGuideBase + "#doc-comments"
@@ -578,6 +583,7 @@ func (f *file) lintNames() {
 		if id.Name == should {
 			return
 		}
+
 		if len(id.Name) > 2 && strings.Contains(id.Name[1:], "_") {
 			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
 			return
@@ -615,7 +621,12 @@ func (f *file) lintNames() {
 				thing = "method"
 			}
 
-			check(v.Name, thing)
+			// Exclude naming warnings for functions that are exported to C but
+			// not exported in the Go API.
+			// See https://github.com/golang/lint/issues/144.
+			if ast.IsExported(v.Name.Name) || !isCgoExported(v) {
+				check(v.Name, thing)
+			}
 
 			checkList(v.Type.Params, thing+" parameter")
 			checkList(v.Type.Results, thing+" result")
@@ -1447,7 +1458,7 @@ func (f *file) checkContextKeyType(x *ast.CallExpr) {
 	}
 	key := f.pkg.typesInfo.Types[x.Args[1]]
 
-	if _, ok := key.Type.(*types.Basic); ok {
+	if ktyp, ok := key.Type.(*types.Basic); ok && ktyp.Kind() != types.Invalid {
 		f.errorf(x, 1.0, category("context"), fmt.Sprintf("should not use basic type %s as key in context.WithValue", key.Type))
 	}
 }
@@ -1541,6 +1552,20 @@ func isZero(expr ast.Expr) bool {
 func isOne(expr ast.Expr) bool {
 	lit, ok := expr.(*ast.BasicLit)
 	return ok && lit.Kind == token.INT && lit.Value == "1"
+}
+
+func isCgoExported(f *ast.FuncDecl) bool {
+	if f.Recv != nil || f.Doc == nil {
+		return false
+	}
+
+	cgoExport := regexp.MustCompile(fmt.Sprintf("(?m)^//export %s$", regexp.QuoteMeta(f.Name.Name)))
+	for _, c := range f.Doc.List {
+		if cgoExport.MatchString(c.Text) {
+			return true
+		}
+	}
+	return false
 }
 
 var basicTypeKinds = map[types.BasicKind]string{
