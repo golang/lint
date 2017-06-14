@@ -22,6 +22,7 @@ import (
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	checkVendor = flag.Bool("vendor", false, "include packages in vendor dirs when expanding ...")
 	suggestions   int
 )
 
@@ -51,6 +52,9 @@ func main() {
 			if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-len("/...")]) {
 				dirsRun = 1
 				for _, dirname := range allPackagesInFS(arg) {
+					if !*checkVendor && strings.Contains("/" + dirname, "/vendor/") {
+						continue
+					}
 					args = append(args, dirname)
 				}
 			} else if isDir(arg) {
