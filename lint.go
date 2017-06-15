@@ -210,6 +210,7 @@ func (f *file) lint() {
 	f.lintTimeNames()
 	f.lintContextKeyTypes()
 	f.lintContextArgs()
+	f.lintDeprecatedConstants()
 }
 
 type link string
@@ -1462,6 +1463,32 @@ func (f *file) lintContextArgs() {
 				break // only flag one
 			}
 		}
+		return true
+	})
+}
+
+// deprecatedConstants keeps the mapping from a deprecated constants
+// to its replacement
+var deprecatedConstants = map[string]string{
+	"os.SEEK_SET": "io.SeekStart",
+	"os.SEEK_CUR": "io.SeekCurrent",
+	"os.SEEK_END": "io.SeekEnd",
+}
+
+// lintDeprecatedConstants checks for the use of a deprecated constant
+// and suggest a different constant in replacement
+func (f *file) lintDeprecatedConstants() {
+	f.walk(func(node ast.Node) bool {
+		switch v := node.(type) {
+		case *ast.SelectorExpr:
+			constant := fmt.Sprintf("%v.%v", v.X, v.Sel)
+			suggestion := deprecatedConstants[constant]
+
+			if suggestion != "" {
+				f.errorf(node, 1.0, fmt.Sprintf("don't use deprecated constant %v; use %v", constant, suggestion))
+			}
+		}
+
 		return true
 	})
 }
