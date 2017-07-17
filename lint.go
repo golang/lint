@@ -16,6 +16,7 @@ import (
 	"go/printer"
 	"go/token"
 	"go/types"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -194,6 +195,7 @@ func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") 
 func (f *file) lint() {
 	f.lintPackageComment()
 	f.lintImports()
+	f.lintFuncArgs()
 	f.lintBlankImports()
 	f.lintExported()
 	f.lintNames()
@@ -468,6 +470,141 @@ func (f *file) lintImports() {
 		}
 
 	}
+}
+
+// hasAdjacentIdenticallyTypedArgs receives an ast.Node, determines if it is of type
+// *ast.FuntType, iterates over it's arguments, and determines if those arguments
+// have the same type definition triggering the linter to return the warning
+// message
+func (f *file) hasAdjacentIdenticallyTypedArgs(node ast.Node) bool {
+	v, ok := node.(*ast.FuncType)
+	if !ok {
+		return true
+	}
+	for i := 1; i < len(v.Params.List); i++ {
+		left := v.Params.List[i-1]
+		right := v.Params.List[i]
+
+		if equalTypes(left.Type, right.Type) {
+			f.errorf(node, 1, category("naming"), "adjacent arguments of like type should have a single type identifier")
+			return false
+		}
+	}
+	return true
+}
+
+// equalTypes reports whether the two given ast.Expr's are of the same type
+func equalTypes(left, right ast.Expr) bool {
+	if reflect.TypeOf(left) != reflect.TypeOf(right) {
+		return false
+	}
+	switch left := left.(type) {
+	case *ast.StarExpr:
+		return equalTypes(left.X, right.(*ast.StarExpr).X)
+	case *ast.Ident:
+		return left.Name == right.(*ast.Ident).Name
+	case *ast.SelectorExpr:
+		right := right.(*ast.SelectorExpr)
+		return equalTypes(left.X, right.X) && equalTypes(left.Sel, right.Sel)
+	case *ast.Ellipsis:
+		return equalTypes(left.Elt, right.(*ast.Ellipsis).Elt)
+	case *ast.InterfaceType:
+		return equalFieldList(left.Methods, right.(*ast.InterfaceType).Methods, true)
+	case *ast.ArrayType:
+		return equalTypes(left.Elt, right.(*ast.ArrayType).Elt)
+	case *ast.ChanType:
+		right := right.(*ast.ChanType)
+		return equalTypes(left.Value, right.Value) && left.Dir == right.Dir
+	case *ast.FuncType:
+		right := right.(*ast.FuncType)
+		return equalFieldList(left.Params, right.Params, false) && equalFieldList(left.Results, right.Results, false)
+	case *ast.StructType:
+		return equalFieldList(left.Fields, right.(*ast.StructType).Fields, true)
+	case *ast.MapType:
+		right := right.(*ast.MapType)
+		return equalTypes(left.Key, right.Key) && equalTypes(left.Value, right.Value)
+	}
+	panic(fmt.Sprintf("unknown type %T", left))
+}
+
+func equalFieldList(f0, f1 *ast.FieldList, checkNames bool) bool {
+	if (f0 == nil) != (f1 == nil) {
+		return false
+	}
+	if f0 == nil {
+		return true // avoid panic!
+	}
+	iter0, iter1 := newFieldListIter(f0), newFieldListIter(f1)
+	for iter0.next() {
+		if !iter1.next() {
+			return false
+		}
+		name0, ftype0 := iter0.field()
+		name1, ftype1 := iter1.field()
+		if checkNames && name0 != name1 {
+			return false
+		}
+		if !equalTypes(ftype0, ftype1) {
+			return false
+		}
+	}
+	if iter1.next() {
+		return false
+	}
+	return true
+}
+
+// newFieldListIter returns an iterator that iterates
+// through all the fields in the FieldList.
+// Anonymous fields appear with an empty field name.
+func newFieldListIter(fl *ast.FieldList) *fieldListIter {
+	return &fieldListIter{
+		list: fl.List,
+	}
+}
+
+type fieldListIter struct {
+	name  *ast.Ident
+	ftype ast.Expr
+	names []*ast.Ident
+	list  []*ast.Field
+}
+
+// next advances to the next field and reports whether
+// there is a next field.
+func (iter *fieldListIter) next() bool {
+	if len(iter.names) > 0 {
+		iter.name = iter.names[0]
+		iter.names = iter.names[1:]
+		return true
+	}
+	if len(iter.list) > 0 {
+		field := iter.list[0]
+		iter.names = field.Names
+		if len(iter.names) == 0 {
+			// No names means it's an anonymous field.
+			// Return a single-element list containing an
+			// empty name so that the equalFieldList logic
+			// will work correctly when comparing anonymous fields.
+			iter.names = []*ast.Ident{&ast.Ident{}}
+		}
+		iter.ftype = field.Type
+		iter.list = iter.list[1:]
+		return iter.next()
+	}
+	return false
+}
+
+// field returns the current field name and type.
+func (iter *fieldListIter) field() (name string, ftype ast.Expr) {
+	return iter.name.Name, iter.ftype
+}
+
+// lintFuncArgs examines the arguments on a given function.
+// It complains if any 2 or more ajacent arguments have redundant
+// type identifiers.
+func (f *file) lintFuncArgs() {
+	f.walk(f.hasAdjacentIdenticallyTypedArgs)
 }
 
 const docCommentsLink = styleGuideBase + "#doc-comments"
