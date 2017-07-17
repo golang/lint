@@ -474,8 +474,7 @@ func (f *file) lintImports() {
 
 // hasAdjacentIdenticallyTypedArgs receives an ast.Node, determines if it is of type
 // *ast.FuntType, iterates over it's arguments, and determines if those arguments
-// have the same type definition triggering the linter to return the warning
-// message
+// have the same type definition triggering a warning message to be returned
 func (f *file) hasAdjacentIdenticallyTypedArgs(node ast.Node) bool {
 	v, ok := node.(*ast.FuncType)
 	if !ok {
