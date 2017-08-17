@@ -44,6 +44,3 @@ type multiError struct{}
 
 func (me multiError) f8() {
 }
-
-// Regression test for a panic caused by ill-formed receiver type.
-func (recv []*x.y) f()

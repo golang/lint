@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"nosuchpkg" // export data unavailable
 	"os"
 )
 
@@ -74,10 +73,6 @@ var out io.Writer = os.Stdout
 var out2 io.Writer = newWriter() // MATCH /should omit.*io\.Writer/
 
 func newWriter() io.Writer { return nil }
-
-// We don't figure out the true types of LHS and RHS here,
-// so we suppress the check.
-var ni nosuchpkg.Interface = nosuchpkg.NewConcrete()
 
 var y string = q(1).String() // MATCH /should.*string/
 
