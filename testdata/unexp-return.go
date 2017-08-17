@@ -3,8 +3,6 @@
 // Package foo ...
 package foo
 
-import ()
-
 type hidden struct{}
 
 // Exported returns a hidden type, which is annoying.
@@ -14,9 +12,11 @@ func Exported() hidden { // MATCH /Exported.*unexported.*hidden/
 
 // ExpErr returns a builtin type.
 func ExpErr() error { // ok
+	return nil
 }
 
 func (hidden) ExpOnHidden() hidden { // ok
+	return hidden{}
 }
 
 // T is another test type.

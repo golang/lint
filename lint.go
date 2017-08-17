@@ -16,6 +16,7 @@ import (
 	"go/printer"
 	"go/token"
 	"go/types"
+	"log"
 	"regexp"
 	"sort"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/tools/go/gcexportdata"
+	"golang.org/x/tools/go/loader"
 )
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
@@ -140,6 +142,8 @@ type pkg struct {
 	typesPkg  *types.Package
 	typesInfo *types.Info
 
+	prog *loader.Program
+
 	// sortable is the set of types in the package that implement sort.Interface.
 	sortable map[string]bool
 	// main is whether this is a "main" package.
@@ -167,6 +171,37 @@ func (p *pkg) lint() []Problem {
 		}
 		*/
 	}
+
+	// TODO(stapelberg): skip the p.typeCheck earlier in favor of using what the
+	// loader gives us.
+	var files []*ast.File
+	for _, f := range p.files {
+		files = append(files, f.f)
+	}
+
+	conf := loader.Config{
+		Fset:       p.fset,
+		ParserMode: parser.ParseComments, // for lintDeprecated
+		CreatePkgs: []loader.PkgSpec{
+			{Files: files},
+		},
+		TypeChecker: types.Config{
+			// Enable FakeImportC so that we can load ad-hoc packages which
+			// import "C".
+			FakeImportC: true,
+			Error:       func(err error) {}, // ignore errors
+		},
+		// Skip type-checking the function bodies of dependencies:
+		TypeCheckFuncBodies: func(path string) bool {
+			return path == files[0].Name.Name
+		},
+	}
+	prog, err := conf.Load()
+	if err != nil {
+		log.Printf("loading failed: %v", err)
+		return p.problems
+	}
+	p.prog = prog
 
 	p.scanSortable()
 	p.main = p.isMain()
@@ -210,6 +245,7 @@ func (f *file) lint() {
 	f.lintTimeNames()
 	f.lintContextKeyTypes()
 	f.lintContextArgs()
+	f.lintDeprecated()
 }
 
 type link string
@@ -1463,6 +1499,64 @@ func (f *file) lintContextArgs() {
 			}
 		}
 		return true
+	})
+}
+
+func docText(n ast.Node) string {
+	switch n := n.(type) {
+	case *ast.FuncDecl:
+		return n.Doc.Text()
+
+	case *ast.Field:
+		return n.Doc.Text()
+
+	case *ast.ValueSpec:
+		return n.Doc.Text()
+
+	case *ast.TypeSpec:
+		return n.Doc.Text()
+
+	default:
+		return ""
+	}
+}
+
+// deprecated returns the deprecation message of a doc comment, or "".
+func deprecated(doc string) string {
+	paragraphs := strings.Split(doc, "\n\n")
+	last := paragraphs[len(paragraphs)-1]
+	if !strings.HasPrefix(last, "Deprecated: ") {
+		return ""
+	}
+	return strings.Replace(strings.TrimPrefix(last, "Deprecated: "), "\n", " ", -1)
+}
+
+func (f *file) lintDeprecated() {
+	f.walk(func(n ast.Node) bool {
+		sel, ok := n.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+
+		obj := f.pkg.prog.Created[0].ObjectOf(sel.Sel)
+		if obj == nil || obj.Pkg() == nil {
+			return false
+		}
+		// TODO(stapelberg): verify obj is in a different package, add a test
+
+		_, path, _ := f.pkg.prog.PathEnclosingInterval(obj.Pos(), obj.Pos())
+		// Expectation:
+		// path[0] holds an *ast.Ident
+		// path[1] holds the declaration we are interested in
+		if len(path) <= 2 {
+			return false
+		}
+
+		if dep := deprecated(docText(path[1])); dep != "" {
+			f.errorf(sel, 1.0, category("deprecation"), "deprecated: %s", dep)
+		}
+
+		return false
 	})
 }
 
