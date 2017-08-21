@@ -199,6 +199,7 @@ func (f *file) lint() {
 	f.lintNames()
 	f.lintVarDecls()
 	f.lintElses()
+	f.lintIfError()
 	f.lintRanges()
 	f.lintErrorf()
 	f.lintErrors()
@@ -1460,6 +1461,104 @@ func (f *file) lintContextArgs() {
 			if isPkgDot(arg.Type, "context", "Context") {
 				f.errorf(fn, 0.9, link("https://golang.org/pkg/context/"), category("arg-order"), "context.Context should be the first parameter of a function")
 				break // only flag one
+			}
+		}
+		return true
+	})
+}
+
+func matchIf(init func(ast.Stmt) bool, cond func(ast.Expr) bool, body func([]ast.Stmt) bool, els func(ast.Stmt) bool) func(as ast.Stmt) bool {
+	return func(as ast.Stmt) bool {
+		s, ok := as.(*ast.IfStmt)
+		return ok && init(s.Init) && cond(s.Cond) && s.Body != nil && body(s.Body.List) && els(s.Else)
+	}
+}
+
+func matchIfOnly(init func(ast.Stmt) bool, cond func(ast.Expr) bool, body func([]ast.Stmt) bool) func(as ast.Stmt) bool {
+	return matchIf(init, cond, body, func(as ast.Stmt) bool { return as == nil })
+}
+
+func matchAssign(lhs, rhs func([]ast.Expr) bool) func(ast.Stmt) bool {
+	return func(as ast.Stmt) bool {
+		a, ok := as.(*ast.AssignStmt)
+		return ok && (a.Tok == token.DEFINE || a.Tok == token.ASSIGN) && lhs(a.Lhs) && rhs(a.Rhs)
+	}
+}
+
+func matchBinaryExpr(op token.Token, x, y func(ast.Expr) bool) func(ast.Expr) bool {
+	return func(ae ast.Expr) bool {
+		e, ok := ae.(*ast.BinaryExpr)
+		return ok && e.Op == op && x(e.X) && y(e.Y)
+	}
+}
+
+func matchReturn(m func([]ast.Expr) bool) func(as ast.Stmt) bool {
+	return func(as ast.Stmt) bool {
+		s, ok := as.(*ast.ReturnStmt)
+		return ok && m(s.Results)
+	}
+}
+
+func matchIdent(m func(string) bool) func(ae ast.Expr) bool {
+	return func(ae ast.Expr) bool {
+		id, ok := ae.(*ast.Ident)
+		return ok && m(id.Name)
+	}
+}
+
+func matchExpr(m ...func(e ast.Expr) bool) func([]ast.Expr) bool {
+	return func(exprs []ast.Expr) bool {
+		if len(exprs) != len(m) {
+			return false
+		}
+		for i, e := range exprs {
+			if !m[i](e) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func matchStmt(m ...func(ast.Stmt) bool) func([]ast.Stmt) bool {
+	return func(stmts []ast.Stmt) bool {
+		if len(m) != len(stmts) {
+			return false
+		}
+		for i, s := range stmts {
+			if !m[i](s) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func anyExpr(ast.Expr) bool { return true }
+
+func matchStringP(name *string) func(string) bool { return func(s string) bool { return s == *name } }
+func matchString(name string) func(string) bool   { return matchStringP(&name) }
+func captureName(name *string) func(string) bool {
+	return func(s string) bool {
+		*name = s
+		return true
+	}
+}
+
+func (f *file) lintIfError() {
+	errVar := ""
+	f.walk(func(node ast.Node) bool {
+		switch v := node.(type) {
+		case *ast.BlockStmt:
+			for i := 0; i <= len(v.List)-2; i++ {
+				if matchIfOnly(
+					matchAssign(matchExpr(matchIdent(captureName(&errVar))), matchExpr(anyExpr)),
+					matchBinaryExpr(token.NEQ, matchIdent(matchStringP(&errVar)), matchIdent(matchString("nil"))),
+					matchStmt(matchReturn(matchExpr(matchIdent(matchStringP(&errVar))))))(v.List[i]) &&
+					matchReturn(matchExpr(matchIdent(matchString("nil"))))(v.List[i+1]) {
+
+					f.errorf(v.List[i], 0.9, "redundant if ...; err != nil check, just return error instead.")
+				}
 			}
 		}
 		return true
