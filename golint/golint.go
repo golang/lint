@@ -42,44 +42,27 @@ func main() {
 	if flag.NArg() == 0 {
 		lintDir(".")
 	} else {
-		// dirsRun, filesRun, and pkgsRun indicate whether golint is applied to
-		// directory, file or package targets. The distinction affects which
-		// checks are run. It is no valid to mix target types.
-		var dirsRun, filesRun, pkgsRun int
-		var args []string
+		var targetFiles, targetDirs, targetPkgs []string
 		for _, arg := range flag.Args() {
 			if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-len("/...")]) {
-				dirsRun = 1
 				for _, dirname := range allPackagesInFS(arg) {
-					args = append(args, dirname)
+					targetDirs = append(targetDirs, dirname)
 				}
 			} else if isDir(arg) {
-				dirsRun = 1
-				args = append(args, arg)
+				targetDirs = append(targetDirs, arg)
 			} else if exists(arg) {
-				filesRun = 1
-				args = append(args, arg)
+				targetFiles = append(targetFiles, arg)
 			} else {
-				pkgsRun = 1
-				args = append(args, arg)
+				targetPkgs = append(targetPkgs, arg)
 			}
 		}
 
-		if dirsRun+filesRun+pkgsRun != 1 {
-			usage()
-			os.Exit(2)
+		lintFiles(targetFiles...)
+		for _, dir := range targetDirs {
+			lintDir(dir)
 		}
-		switch {
-		case dirsRun == 1:
-			for _, dir := range args {
-				lintDir(dir)
-			}
-		case filesRun == 1:
-			lintFiles(args...)
-		case pkgsRun == 1:
-			for _, pkg := range importPaths(args) {
-				lintPackage(pkg)
-			}
+		for _, pkg := range importPaths(targetPkgs) {
+			lintPackage(pkg)
 		}
 	}
 
