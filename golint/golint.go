@@ -8,6 +8,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"go/build"
@@ -19,10 +20,17 @@ import (
 	"github.com/golang/lint"
 )
 
+const (
+	outputFormatDefault    = "default"
+	outputFormatCheckStyle = "checkstyle-xml"
+)
+
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	outputFormat  = flag.String("output_format", "default", "set the output format. Allowed values are \"default\" and \"checkstyle-xml\"")
 	suggestions   int
+	checkstyle    = NewCheckStyle()
 )
 
 func usage() {
@@ -38,6 +46,12 @@ func usage() {
 func main() {
 	flag.Usage = usage
 	flag.Parse()
+
+	// Check output format
+	if *outputFormat != outputFormatDefault && *outputFormat != outputFormatCheckStyle {
+		fmt.Fprintf(os.Stderr, "Invalid output_format \"%v\". Allowed values are \"default\" and \"checkstyle-xml\"", *outputFormat)
+		os.Exit(1)
+	}
 
 	if flag.NArg() == 0 {
 		lintDir(".")
@@ -83,6 +97,15 @@ func main() {
 		}
 	}
 
+	if *outputFormat == outputFormatCheckStyle {
+		xmlBytes, err := xml.Marshal(checkstyle)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
+		fmt.Print(string(xmlBytes))
+	}
+
 	if *setExitStatus && suggestions > 0 {
 		fmt.Fprintf(os.Stderr, "Found %d lint suggestions; failing.\n", suggestions)
 		os.Exit(1)
@@ -118,7 +141,13 @@ func lintFiles(filenames ...string) {
 	}
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
-			fmt.Printf("%v: %s\n", p.Position, p.Text)
+			if *outputFormat == outputFormatDefault {
+				fmt.Printf("%v: %s\n", p.Position, p.Text)
+			} else if *outputFormat == outputFormatCheckStyle {
+				checkstyleFile := checkstyle.EnsureFile(p.Position.Filename)
+				checkstyleError := NewCheckStyleError(p.Position.Line, p.Text, p.Category)
+				checkstyleFile.AddError(checkstyleError)
+			}
 			suggestions++
 		}
 	}
