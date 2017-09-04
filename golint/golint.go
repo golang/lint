@@ -22,7 +22,7 @@ import (
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
-	checkVendor = flag.Bool("vendor", false, "include packages in vendor dirs when expanding ...")
+	checkVendor   = flag.Bool("vendor", false, "include packages in vendor dirs when expanding ...")
 	suggestions   int
 )
 
