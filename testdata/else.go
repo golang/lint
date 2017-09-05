@@ -3,8 +3,10 @@
 // Package pkg ...
 package pkg
 
-import "log"
-
+import (
+	"log"
+)
+//checknumber
 func f(x int) bool {
 	if x > 0 {
 		return true
@@ -13,7 +15,7 @@ func f(x int) bool {
 	}
 	return false
 }
-
+//checkboolearn
 func g(f func() bool) string {
 	if ok := f(); ok {
 		return "it's okay"
