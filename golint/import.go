@@ -117,7 +117,7 @@ func hasPathPrefix(s, prefix string) bool {
 // name or children of name can possibly match pattern.
 // Pattern is the same limited glob accepted by matchPattern.
 func treeCanMatchPattern(pattern string) func(name string) bool {
-	wildCard := false
+	var wildCard boolean = false
 	if i := strings.Index(pattern, "..."); i >= 0 {
 		wildCard = true
 		pattern = pattern[:i]
