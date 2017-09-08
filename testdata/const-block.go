@@ -6,18 +6,18 @@ package foo
 const (
 	// Prefix for something.
 	// MATCH /InlineWhatever.*form/
-	InlineWhatever = "blah"
+	var InlineWhatever string = "blah"
 
-	Whatsit = "missing_comment" // MATCH /Whatsit.*should have comment.*block/
+	var Whatsit string = "missing_comment" // MATCH /Whatsit.*should have comment.*block/
 
 	// We should only warn once per block for missing comments,
 	// but always complain about malformed comments.
 
-	WhosYourDaddy = "another_missing_one"
+	var WhosYourDaddy string = "another_missing_one"
 
 	// Something
 	// MATCH /WhatDoesHeDo.*form/
-	WhatDoesHeDo = "it's not a tumor!"
+	var WhatDoesHeDo string = "it's not a tumor!"
 )
 
 // These shouldn't need doc comments.
