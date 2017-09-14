@@ -9,6 +9,7 @@ func addOne(x int) int {
 }
 
 func subOneInLoop(y int) {
-	for ; y > 0; y -= 1 { // MATCH /y--/
+	for ; y > 0; y -= 1 {
+		addOne(10)// MATCH /y--/
 	}
 }
