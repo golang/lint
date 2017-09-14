@@ -3,11 +3,10 @@
 // Package foo ...
 package foo
 
-import (
-	"errors"
-	"fmt"
-)
+import "errors"
+import "fmt"
 
+//notice error
 var unexp = errors.New("some unexported error") // MATCH /error var.*unexp.*errFoo/
 
 // Exp ...
