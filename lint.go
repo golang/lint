@@ -1467,98 +1467,79 @@ func (f *file) lintContextArgs() {
 	})
 }
 
-func matchIf(init func(ast.Stmt) bool, cond func(ast.Expr) bool, body func([]ast.Stmt) bool, els func(ast.Stmt) bool) func(as ast.Stmt) bool {
-	return func(as ast.Stmt) bool {
-		s, ok := as.(*ast.IfStmt)
-		return ok && init(s.Init) && cond(s.Cond) && s.Body != nil && body(s.Body.List) && els(s.Else)
-	}
-}
-
-func matchIfOnly(init func(ast.Stmt) bool, cond func(ast.Expr) bool, body func([]ast.Stmt) bool) func(as ast.Stmt) bool {
-	return matchIf(init, cond, body, func(as ast.Stmt) bool { return as == nil })
-}
-
-func matchAssign(lhs, rhs func([]ast.Expr) bool) func(ast.Stmt) bool {
-	return func(as ast.Stmt) bool {
-		a, ok := as.(*ast.AssignStmt)
-		return ok && (a.Tok == token.DEFINE || a.Tok == token.ASSIGN) && lhs(a.Lhs) && rhs(a.Rhs)
-	}
-}
-
-func matchBinaryExpr(op token.Token, x, y func(ast.Expr) bool) func(ast.Expr) bool {
-	return func(ae ast.Expr) bool {
-		e, ok := ae.(*ast.BinaryExpr)
-		return ok && e.Op == op && x(e.X) && y(e.Y)
-	}
-}
-
-func matchReturn(m func([]ast.Expr) bool) func(as ast.Stmt) bool {
-	return func(as ast.Stmt) bool {
-		s, ok := as.(*ast.ReturnStmt)
-		return ok && m(s.Results)
-	}
-}
-
-func matchIdent(m func(string) bool) func(ae ast.Expr) bool {
-	return func(ae ast.Expr) bool {
-		id, ok := ae.(*ast.Ident)
-		return ok && m(id.Name)
-	}
-}
-
-func matchExpr(m ...func(e ast.Expr) bool) func([]ast.Expr) bool {
-	return func(exprs []ast.Expr) bool {
-		if len(exprs) != len(m) {
+// containsComments returns whether the interval [start, end) contains any
+// comments without "// MATCH " prefix.
+func (f *file) containsComments(start, end token.Pos) bool {
+	for _, cgroup := range f.f.Comments {
+		comments := cgroup.List
+		if comments[0].Slash >= end {
+			// All comments starting with this group are after end pos.
 			return false
 		}
-		for i, e := range exprs {
-			if !m[i](e) {
-				return false
+		if comments[len(comments)-1].Slash < start {
+			// Comments group ends before start pos.
+			continue
+		}
+		for _, c := range comments {
+			if start <= c.Slash && c.Slash < end && !strings.HasPrefix(c.Text, "// MATCH ") {
+				return true
 			}
 		}
-		return true
 	}
-}
-
-func matchStmt(m ...func(ast.Stmt) bool) func([]ast.Stmt) bool {
-	return func(stmts []ast.Stmt) bool {
-		if len(m) != len(stmts) {
-			return false
-		}
-		for i, s := range stmts {
-			if !m[i](s) {
-				return false
-			}
-		}
-		return true
-	}
-}
-
-func anyExpr(ast.Expr) bool { return true }
-
-func matchStringP(name *string) func(string) bool { return func(s string) bool { return s == *name } }
-func matchString(name string) func(string) bool   { return matchStringP(&name) }
-func captureName(name *string) func(string) bool {
-	return func(s string) bool {
-		*name = s
-		return true
-	}
+	return false
 }
 
 func (f *file) lintIfError() {
-	errVar := ""
 	f.walk(func(node ast.Node) bool {
 		switch v := node.(type) {
 		case *ast.BlockStmt:
-			for i := 0; i <= len(v.List)-2; i++ {
-				if matchIfOnly(
-					matchAssign(matchExpr(matchIdent(captureName(&errVar))), matchExpr(anyExpr)),
-					matchBinaryExpr(token.NEQ, matchIdent(matchStringP(&errVar)), matchIdent(matchString("nil"))),
-					matchStmt(matchReturn(matchExpr(matchIdent(matchStringP(&errVar))))))(v.List[i]) &&
-					matchReturn(matchExpr(matchIdent(matchString("nil"))))(v.List[i+1]) {
-
-					f.errorf(v.List[i], 0.9, "redundant if ...; err != nil check, just return error instead.")
+			for i := 0; i < len(v.List)-1; i++ {
+				// if var := whatever; var != nil { return var }
+				s, ok := v.List[i].(*ast.IfStmt)
+				if !ok || s.Body == nil || len(s.Body.List) != 1 || s.Else != nil {
+					continue
 				}
+				assign, ok := s.Init.(*ast.AssignStmt)
+				if !ok || len(assign.Lhs) != 1 || !(assign.Tok == token.DEFINE || assign.Tok == token.ASSIGN) {
+					continue
+				}
+				id, ok := assign.Lhs[0].(*ast.Ident)
+				if !ok {
+					continue
+				}
+				expr, ok := s.Cond.(*ast.BinaryExpr)
+				if !ok || expr.Op != token.NEQ {
+					continue
+				}
+				if lhs, ok := expr.X.(*ast.Ident); !ok || lhs.Name != id.Name {
+					continue
+				}
+				if rhs, ok := expr.Y.(*ast.Ident); !ok || rhs.Name != "nil" {
+					continue
+				}
+				r, ok := s.Body.List[0].(*ast.ReturnStmt)
+				if !ok || len(r.Results) != 1 {
+					continue
+				}
+				if r, ok := r.Results[0].(*ast.Ident); !ok || r.Name != id.Name {
+					continue
+				}
+
+				// return nil
+				r, ok = v.List[i+1].(*ast.ReturnStmt)
+				if !ok || len(r.Results) != 1 {
+					continue
+				}
+				if r, ok := r.Results[0].(*ast.Ident); !ok || r.Name != "nil" {
+					continue
+				}
+
+				// check if there are any comments explaining the construct, don't emit an error if there are some.
+				if f.containsComments(s.Pos(), r.Pos()) {
+					continue
+				}
+
+				f.errorf(v.List[i], 0.9, "redundant if ...; err != nil check, just return error instead.")
 			}
 		}
 		return true
