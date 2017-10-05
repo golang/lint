@@ -1,19 +1,20 @@
 hash: d68329e4facad8e1c0d48022ed1c3f873b882f18a8695d4abfd10e2c42fabe6b
-updated: 2017-06-10T14:17:45.888147644+09:00
+updated: 2017-10-05T12:01:18.5264602+09:00
 imports:
 - name: github.com/hashicorp/hcl
-  version: 392dba7d905ed5d04a5794ba89f558b27e2ba1ca
+  version: 80e628d796135357b3d2e33a985c666b9f35eee1
   subpackages:
   - hcl/ast
   - hcl/parser
-  - hcl/token
-  - json/parser
   - hcl/scanner
   - hcl/strconv
+  - hcl/token
+  - json/parser
   - json/scanner
   - json/token
 - name: golang.org/x/tools
-  version: e011c1062a41d0e2614279f1dc8cf7f1bf6aaac3
+  version: 908849c3379245f71612058fbf92cf6bf58c3c75
   subpackages:
+  - go/gcexportdata
   - go/gcimporter15
-devImports: []
+testImports: []
