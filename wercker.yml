@@ -1,4 +1,4 @@
-box: pacificporter/golang:1.8.3-6.9.2-chromium3
+box: pacificporter/golang:1.9.1-6.11.1
 build:
   steps:
     - script:
