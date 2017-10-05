@@ -13,7 +13,7 @@ imports:
   - json/scanner
   - json/token
 - name: golang.org/x/tools
-  version: 908849c3379245f71612058fbf92cf6bf58c3c75
+  version: e011c1062a41d0e2614279f1dc8cf7f1bf6aaac3
   subpackages:
   - go/gcexportdata
   - go/gcimporter15
