@@ -54,12 +54,7 @@ func l() (interface{}, error) {
 	if err := f(); err != nil {
 		return nil, err
 	}
-	if err := f(); err != nil {
-		return nil, err
-	}
-	if err := f(); err != nil {
-		return nil, err
-	}
+	
 	// Phew, it worked
 	return nil
 }
@@ -68,12 +63,7 @@ func m() error {
 	if err := f(); err != nil {
 		return err
 	}
-	if err := f(); err != nil {
-		return err
-	}
-	if err := f(); err != nil {
-		return err
-	}
+	
 	// Phew, it worked again.
 	return nil
 }
