@@ -4,7 +4,8 @@
 package foo
 
 // Returns nothing
-func f() { // ok
+func f() error{ // ok
+	return nil
 }
 
 // Check for a single error return
@@ -41,3 +42,7 @@ func l() (int, error, int) { // MATCH /error should be the last type/
 func m() (x int, err error, y int) { // MATCH /error should be the last type/
 	return 0, nil, 0
 }
+// New returns an error that formats as the given text.
+  func t(text string) error {
+  	return &errorString{text}
+  }
