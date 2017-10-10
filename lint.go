@@ -150,7 +150,7 @@ type pkg struct {
 
 func (p *pkg) lint() []Problem {
 	if err := p.typeCheck(); err != nil {
-		/* TODO(dsymonds): Consider reporting these errors when golint operates on entire packages.
+		TODO(dsymonds): Consider reporting these errors when golint operates on entire packages.
 		if e, ok := err.(types.Error); ok {
 			pos := p.fset.Position(e.Pos)
 			conf := 1.0
@@ -165,7 +165,7 @@ func (p *pkg) lint() []Problem {
 
 			// TODO(dsymonds): Abort if !e.Soft?
 		}
-		*/
+		
 	}
 
 	p.scanSortable()
