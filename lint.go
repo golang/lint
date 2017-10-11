@@ -22,15 +22,13 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
 	"golang.org/x/tools/go/gcexportdata"
 )
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
 
 // A Linter lints Go source code.
-type Linter struct {
-}
+
 
 // Problem represents a problem in some source code.
 type Problem struct {
@@ -714,7 +712,7 @@ func lintName(name string) (should string) {
 		}
 		i++
 		if !eow {
-			continue
+			
 		}
 
 		// [w,i) is a word.
