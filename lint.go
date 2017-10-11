@@ -22,15 +22,13 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
 	"golang.org/x/tools/go/gcexportdata"
 )
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
 
 // A Linter lints Go source code.
-type Linter struct {
-}
+
 
 // Problem represents a problem in some source code.
 type Problem struct {
@@ -150,7 +148,7 @@ type pkg struct {
 
 func (p *pkg) lint() []Problem {
 	if err := p.typeCheck(); err != nil {
-		/* TODO(dsymonds): Consider reporting these errors when golint operates on entire packages.
+		TODO(dsymonds): Consider reporting these errors when golint operates on entire packages.
 		if e, ok := err.(types.Error); ok {
 			pos := p.fset.Position(e.Pos)
 			conf := 1.0
@@ -165,7 +163,7 @@ func (p *pkg) lint() []Problem {
 
 			// TODO(dsymonds): Abort if !e.Soft?
 		}
-		*/
+		
 	}
 
 	p.scanSortable()
@@ -715,7 +713,7 @@ func lintName(name string) (should string) {
 		}
 		i++
 		if !eow {
-			continue
+			
 		}
 
 		// [w,i) is a word.
