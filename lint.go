@@ -425,6 +425,11 @@ func (f *file) lintPackageComment() {
 	// Only non-main packages need to keep to this form.
 	if !f.pkg.main && !strings.HasPrefix(s, prefix) {
 		f.errorf(f.f.Doc, 1, link(ref), category("comments"), `package comment should be of the form "%s..."`, prefix)
+		return
+	}
+
+	if !f.pkg.main && strings.HasPrefix(s, prefix+"...") {
+		f.errorf(f.f.Doc, 1, link(ref), category("comments"), "package comment should be a complete sentence")
 	}
 }
 
@@ -804,6 +809,10 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 	if !strings.HasPrefix(s, t.Name.Name+" ") {
 		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
 	}
+
+	if strings.HasPrefix(s, t.Name.Name+" ...") {
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), "comment on exported type %v should be a complete sentence", t.Name)
+	}
 }
 
 var commonMethods = map[string]bool{
@@ -851,6 +860,12 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 	prefix := fn.Name.Name + " "
 	if !strings.HasPrefix(s, prefix) {
 		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		return
+	}
+
+	prefix = prefix + "..."
+	if strings.HasPrefix(s, prefix) {
+		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), "comment on exported %s %s should be a complete sentence", kind, name)
 	}
 }
 
@@ -904,6 +919,12 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	prefix := name + " "
 	if !strings.HasPrefix(doc.Text(), prefix) {
 		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		return
+	}
+
+	prefix = prefix + "..."
+	if strings.HasPrefix(doc.Text(), prefix) {
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), "comment on exported %s %s should be a complete sentence", kind, name)
 	}
 }
 

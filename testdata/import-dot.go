@@ -1,6 +1,6 @@
 // Test that dot imports are flagged.
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
 import . "fmt" // MATCH /dot import/

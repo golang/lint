@@ -1,6 +1,6 @@
 // Test for use of x++ and x--.
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
 func addOne(x int) int {

@@ -1,7 +1,7 @@
 // Test of return+else warning; should not trigger on multi-branch if/else.
 // OK
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
 import "log"

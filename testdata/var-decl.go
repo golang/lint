@@ -1,6 +1,6 @@
 // Test for redundant type declaration.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 import (

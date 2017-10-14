@@ -1,6 +1,6 @@
 // Test for name linting.
 
-// Package pkg_with_underscores ...
+// Package pkg_with_underscores does something.
 package pkg_with_underscores // MATCH /underscore.*package name/
 
 import (

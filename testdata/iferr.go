@@ -1,6 +1,6 @@
 // Test of redundant if err != nil
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
 func f() error {

@@ -1,6 +1,6 @@
 // Test that context.Context is the first arg to a function.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 import (

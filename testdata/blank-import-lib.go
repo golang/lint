@@ -1,6 +1,6 @@
 // Test that blank imports in library packages are flagged.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 // The instructions need to go before the imports below so they will not be
