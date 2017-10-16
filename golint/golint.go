@@ -22,6 +22,7 @@ import (
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	buildTags     = flag.String("tags", "", "space-separated list of additional build tags to use")
 	suggestions   int
 )
 
@@ -124,13 +125,24 @@ func lintFiles(filenames ...string) {
 	}
 }
 
+func getBuildCtx() *build.Context {
+	ctx := build.Default
+
+	if *buildTags != "" {
+		tags := strings.Split(*buildTags, " ")
+		ctx.BuildTags = append(ctx.BuildTags, tags...)
+	}
+
+	return &ctx
+}
+
 func lintDir(dirname string) {
-	pkg, err := build.ImportDir(dirname, 0)
+	pkg, err := getBuildCtx().ImportDir(dirname, 0)
 	lintImportedPackage(pkg, err)
 }
 
 func lintPackage(pkgname string) {
-	pkg, err := build.Import(pkgname, ".", 0)
+	pkg, err := getBuildCtx().Import(pkgname, ".", 0)
 	lintImportedPackage(pkg, err)
 }
 
