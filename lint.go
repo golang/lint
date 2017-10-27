@@ -1256,7 +1256,7 @@ func (f *file) lintReceiverNames() {
 		name := names[0].Name
 		const ref = styleGuideBase + "#receiver-names"
 		if name == "_" {
-			f.errorf(n, 1, link(ref), category("naming"), `receiver name should not be an underscore`)
+			f.errorf(n, 1, link(ref), category("naming"), `receiver name should not be an underscore, omit the name if it is unused`)
 			return true
 		}
 		if name == "this" || name == "self" {
