@@ -1,9 +1,8 @@
 ;;; golint.el --- lint for the Go source code
 
 ;; Copyright 2013 The Go Authors. All rights reserved.
-;; Use of this source code is governed by a BSD-style
-;; license that can be found in the LICENSE file.
 
+;; License: BSD-3-clause
 ;; URL: https://github.com/golang/lint
 
 ;;; Commentary:
