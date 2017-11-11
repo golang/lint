@@ -40,7 +40,9 @@
 
 ;;;###autoload
 (defun golint ()
-  "Run golint on the current file and populate the fix list. Pressing C-x ` will jump directly to the line in your code which caused the first message."
+  "Run golint on the current file and populate the fix list.
+Pressing \"C-x `\" jumps directly to the line in your code which
+caused the first message."
   (interactive)
   (compilation-start
    (mapconcat #'shell-quote-argument
