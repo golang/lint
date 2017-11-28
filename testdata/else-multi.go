@@ -16,3 +16,19 @@ func f(x int) bool {
 	}
 	return false
 }
+
+func issue354(x int) bool {
+	switch g {
+	case 0:
+		if x == 0 {
+			log.Print("x is zero")
+		} else if x > 0 {
+			log.Print("greater than 0")
+		} else if x < 0 {
+			return true
+		} else {
+			log.Printf("non-positive x: %d", x)
+		}
+	}
+	return false
+}
