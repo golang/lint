@@ -23,6 +23,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"golang.org/x/tools/go/ast/astutil"
+
 	"golang.org/x/tools/go/gcexportdata"
 )
 
@@ -1115,6 +1117,9 @@ func (f *file) lintErrorf() {
 		if !isErrorsNew && !isTestingError {
 			return true
 		}
+		if !f.imports("errors") {
+			return true
+		}
 		arg := ce.Args[0]
 		ce, ok = arg.(*ast.CallExpr)
 		if !ok || !isPkgDot(ce.Fun, "fmt", "Sprintf") {
@@ -1686,6 +1691,21 @@ func (f *file) srcLineWithMatch(node ast.Node, pattern string) (m []string) {
 	line = strings.TrimSuffix(line, "\n")
 	rx := regexp.MustCompile(pattern)
 	return rx.FindStringSubmatch(line)
+}
+
+// imports returns true if the current file imports the specified package path
+func (f *file) imports(importPath string) bool {
+	all := astutil.Imports(f.fset, f.f)
+	for _, p := range all {
+		for _, i := range p {
+			uq, err := strconv.Unquote(i.Path.Value)
+			if err == nil && importPath == uq {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // srcLine returns the complete line at p, including the terminating newline.
