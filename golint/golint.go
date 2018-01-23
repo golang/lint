@@ -47,12 +47,11 @@ func main() {
 		// checks are run. It is no valid to mix target types.
 		var dirsRun, filesRun, pkgsRun int
 		var args []string
-		for _, arg := range flag.Args()  {
-			basePath := arg[:len(arg)-len("/...")]
-			if strings.HasSuffix(arg, "/...") && isDir(basePath) {
+		for _, arg := range flag.Args() {
+			if trimmedArg := strings.TrimSuffix(arg, "/..."); trimmedArg != arg && isDir(trimmedArg) {
 				dirsRun = 1
 				for _, dirname := range allPackagesInFS(arg) {
-					if strings.Contains(dirname[len(basePath):], "/vendor/") {
+					if strings.Contains(dirname[len(trimmedArg):], "/vendor/") {
 						continue
 					}
 					args = append(args, dirname)
