@@ -4,20 +4,12 @@
 package foo
 
 const (
-	// Prefix for something.
-	// MATCH /InlineWhatever.*form/
-	InlineWhatever = "blah"
-
 	Whatsit = "missing_comment" // MATCH /Whatsit.*should have comment.*block/
 
 	// We should only warn once per block for missing comments,
 	// but always complain about malformed comments.
 
 	WhosYourDaddy = "another_missing_one"
-
-	// Something
-	// MATCH /WhatDoesHeDo.*form/
-	WhatDoesHeDo = "it's not a tumor!"
 )
 
 // These shouldn't need doc comments.

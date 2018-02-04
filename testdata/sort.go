@@ -3,14 +3,14 @@
 // Package pkg ...
 package pkg
 
-// T is ...
+// Description ...
 type T []int
 
 // Len by itself should get documented.
 
 func (t T) Len() int { return len(t) } // MATCH /exported method T\.Len.*should.*comment/
 
-// U is ...
+// Description ...
 type U []int
 
 func (u U) Len() int           { return len(u) }
