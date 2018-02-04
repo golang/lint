@@ -782,8 +782,7 @@ var commonInitialisms = map[string]bool{
 }
 
 // lintTypeDoc examines the doc comment on a type.
-// It complains if they are missing from an exported type,
-// or if they are not of the standard form.
+// It complains if they are missing from an exported type
 func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 	if !ast.IsExported(t.Name.Name) {
 		return
@@ -800,9 +799,6 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 			s = s[len(a)+1:]
 			break
 		}
-	}
-	if !strings.HasPrefix(s, t.Name.Name+" ") {
-		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
 	}
 }
 
@@ -846,11 +842,6 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 	if fn.Doc == nil {
 		f.errorf(fn, 1, link(docCommentsLink), category("comments"), "exported %s %s should have comment or be unexported", kind, name)
 		return
-	}
-	s := fn.Doc.Text()
-	prefix := fn.Name.Name + " "
-	if !strings.HasPrefix(s, prefix) {
-		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
 	}
 }
 
@@ -900,10 +891,6 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	doc := vs.Doc
 	if doc == nil {
 		doc = gd.Doc
-	}
-	prefix := name + " "
-	if !strings.HasPrefix(doc.Text(), prefix) {
-		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
 	}
 }
 

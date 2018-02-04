@@ -3,11 +3,9 @@
 // Package foo ...
 package foo
 
-import ()
-
 type hidden struct{}
 
-// Exported returns a hidden type, which is annoying.
+// Returns a hidden type, which is annoying.
 func Exported() hidden { // MATCH /Exported.*unexported.*hidden/
 	return hidden{}
 }
@@ -19,15 +17,15 @@ func ExpErr() error { // ok
 func (hidden) ExpOnHidden() hidden { // ok
 }
 
-// T is another test type.
+// Description ..
 type T struct{}
 
-// MethodOnT returns a hidden type, which is annoying.
+// Returns a hidden type, which is annoying.
 func (T) MethodOnT() hidden { // MATCH /method MethodOnT.*unexported.*hidden/
 	return hidden{}
 }
 
-// ExpT returns a T.
+// Returns a T.
 func ExpT() T { // ok
 	return T{}
 }
@@ -40,7 +38,7 @@ func unexp() hidden { // ok
 
 type int struct{}
 
-// ExportedIntReturner returns an unexported type from this package.
+// Returns an unexported type from this package.
 func ExportedIntReturner() int { // MATCH /ExportedIntReturner.*unexported.*int/
 	return int{}
 }

@@ -6,7 +6,7 @@ package pkg
 
 import "net/http"
 
-// T is ...
+// Description ...
 type T int
 
 func (T) Error() string                                    { return "" }

@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-// Q is a test type.
+// Description ...
 type Q bool
 
 var myInt int = 7                           // MATCH /should.*int.*myInt.*inferred/
