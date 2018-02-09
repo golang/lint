@@ -13,3 +13,6 @@ If you still have problems, consider searching for existing issues before filing
 ## Before sending a pull request:
 
 Have you understood the purpose of golint? Make sure to carefully read `README`.
+
+### Run golint tests. Note that golint will report warnings on test files.
+go test -v -race ./...
