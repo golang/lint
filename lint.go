@@ -28,6 +28,41 @@ import (
 
 const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
 
+// List of symbols that can end a sentence.
+// Note that it doesn't follow grammar rules but common sense instead.
+const symbolsCanEndASentence = ".?!;\"'`\\/|)}]>/#$"
+
+// hasValidEndOfSentence checks if s has a valid end of sentence.
+func hasValidEndOfSentence(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		// Don't enforce valid end of sentence on empty comment.
+		// It must be enforced by other restrictions if any.
+		return true
+	}
+
+	last := s[len(s) - 1]
+	for _, runeValue := range symbolsCanEndASentence {
+		if last == byte(runeValue) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Check if the comment has some directive. Currently it checks only easyjson directive.
+// See details in easyjson package. In short, easyjson requires that type's comment has:
+//easyjson:json
+func hasDirective(s string) bool {
+	// EasyJSON documentations says: "structs whose preceding comment starts with `easyjson:json`
+	// will have marshalers/unmarshalers generated. We check just whole comment if it contains
+	// this directive for simplicity.
+	hasEasyJSONDirective := strings.Contains(s, "easyjson:json")
+
+	return hasEasyJSONDirective
+}
+
 // A Linter lints Go source code.
 type Linter struct {
 }
@@ -425,6 +460,12 @@ func (f *file) lintPackageComment() {
 	// Only non-main packages need to keep to this form.
 	if !f.pkg.main && !strings.HasPrefix(s, prefix) {
 		f.errorf(f.f.Doc, 1, link(ref), category("comments"), `package comment should be of the form "%s..."`, prefix)
+		return
+	}
+
+	if !f.pkg.main && !hasValidEndOfSentence(s) {
+		f.errorf(f.f.Doc, 1, link(ref), category("comments"), `package comment should have a valid end of sentence`)
+		return
 	}
 }
 
@@ -803,6 +844,13 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 	}
 	if !strings.HasPrefix(s, t.Name.Name+" ") {
 		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
+		return
+	}
+
+	// Ignore, if some directive is detected.
+	if !hasDirective(s) && !hasValidEndOfSentence(s) {
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should have a valid end of sentence %s`, t.Name, s)
+		return
 	}
 }
 
@@ -847,10 +895,19 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 		f.errorf(fn, 1, link(docCommentsLink), category("comments"), "exported %s %s should have comment or be unexported", kind, name)
 		return
 	}
+
 	s := fn.Doc.Text()
 	prefix := fn.Name.Name + " "
 	if !strings.HasPrefix(s, prefix) {
 		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		return
+	}
+
+	// Exclude naming warnings for functions that are exported to C.
+	// See https://github.com/golang/lint/issues/144.
+	if !isCgoExported(fn) && !hasValidEndOfSentence(s) {
+		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should have a valid end of sentence`, kind, name)
+		return
 	}
 }
 
@@ -904,6 +961,12 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	prefix := name + " "
 	if !strings.HasPrefix(doc.Text(), prefix) {
 		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		return
+	}
+
+	if !hasValidEndOfSentence(doc.Text()) {
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should have a valid end of sentence`, kind, name)
+		return
 	}
 }
 

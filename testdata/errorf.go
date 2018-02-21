@@ -22,7 +22,7 @@ func f(x int) error {
 	return nil
 }
 
-// TestF is a dummy test
+// TestF is a dummy test.
 func TestF(t *testing.T) error {
 	x := 1
 	if x > 10 {
