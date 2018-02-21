@@ -1,6 +1,7 @@
 sudo: false
 language: go
 go:
+  - 1.6.x
   - 1.7.x
   - 1.8.x
   - 1.9.x
@@ -12,6 +13,7 @@ install:
 script:
   - go test -v -race ./...
 
+go_import_path: gopkg.in/yaml.v2
 matrix:
   allow_failures:
     - go: master
