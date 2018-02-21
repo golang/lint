@@ -41,10 +41,6 @@ Golint makes suggestions for many of the mechanically checkable items listed in
 [Effective Go](https://golang.org/doc/effective_go.html) and the
 [CodeReviewComments wiki page](https://golang.org/wiki/CodeReviewComments).
 
-If you find an established style that is frequently violated, and which
-you think golint could statically check,
-[file an issue](https://github.com/golang/lint/issues).
-
 ## Scope
 
 Golint is meant to carry out the stylistic conventions put forth in
