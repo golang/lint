@@ -46,7 +46,7 @@ Golint makes suggestions for many of the mechanically checkable items listed in
 Golint is meant to carry out the stylistic conventions put forth in
 [Effective Go](https://golang.org/doc/effective_go.html) and
 [CodeReviewComments](https://golang.org/wiki/CodeReviewComments).
-Changes that are not aligned with those documents will not be considered at this time.
+Changes that are not aligned with those documents will not be considered.
 
 ## Contributions
 
