@@ -1,6 +1,6 @@
 // Test for returning errors.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 // Returns nothing

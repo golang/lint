@@ -1,6 +1,6 @@
 // Test for not using fmt.Errorf or testing.Errorf.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 import (

@@ -1,6 +1,6 @@
 // Test for bad receiver names.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 type foo struct{}

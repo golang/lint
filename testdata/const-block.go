@@ -1,6 +1,6 @@
 // Test for docs in const blocks
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 const (

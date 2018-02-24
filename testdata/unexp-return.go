@@ -1,6 +1,6 @@
 // Test for unexported return types.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 import ()

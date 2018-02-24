@@ -1,12 +1,12 @@
 // Test that we don't nag for comments on common methods.
 // OK
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
 import "net/http"
 
-// T is ...
+// T is a server of sorts.
 type T int
 
 func (T) Error() string                                    { return "" }

@@ -1,7 +1,7 @@
 // Test that blank imports in test packages are not flagged.
 // OK
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 // These are essentially the same imports as in the "library" package, but

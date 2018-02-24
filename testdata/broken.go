@@ -2,7 +2,7 @@
 // See https://golang.org/issue/11271 for discussion.
 // OK
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
 // Foo is a method with a missing receiver.

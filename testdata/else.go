@@ -1,6 +1,6 @@
 // Test of return+else warning.
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
 import "log"

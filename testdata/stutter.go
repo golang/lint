@@ -1,6 +1,6 @@
 // Test of stuttery names.
 
-// Package donut ...
+// Package donut does something.
 package donut
 
 // DonutMaker makes donuts.

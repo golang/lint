@@ -1,7 +1,7 @@
 // Test that blank imports in package main are not flagged.
 // OK
 
-// Binary foo ...
+// Binary foo does something.
 package main
 
 import _ "fmt"

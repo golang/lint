@@ -1,6 +1,6 @@
 // Test of time suffixes.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 import (

@@ -1,6 +1,6 @@
 // Test for naming errors.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 import (
@@ -10,12 +10,12 @@ import (
 
 var unexp = errors.New("some unexported error") // MATCH /error var.*unexp.*errFoo/
 
-// Exp ...
+// Exp is returned when some error happens.
 var Exp = errors.New("some exported error") // MATCH /error var.*Exp.*ErrFoo/
 
 var (
 	e1 = fmt.Errorf("blah %d", 4) // MATCH /error var.*e1.*errFoo/
-	// E2 ...
+	// E2 is returned when that other error happens.
 	E2 = fmt.Errorf("blah %d", 5) // MATCH /error var.*E2.*ErrFoo/
 )
 

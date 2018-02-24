@@ -1,6 +1,6 @@
 // Test for range construction.
 
-// Package foo ...
+// Package foo does something.
 package foo
 
 func f() {

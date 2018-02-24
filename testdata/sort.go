@@ -1,16 +1,16 @@
 // Test that we don't ask for comments on sort.Interface methods.
 
-// Package pkg ...
+// Package pkg does something.
 package pkg
 
-// T is ...
+// T is an awesome slice.
 type T []int
 
 // Len by itself should get documented.
 
 func (t T) Len() int { return len(t) } // MATCH /exported method T\.Len.*should.*comment/
 
-// U is ...
+// U is an even better slice than T.
 type U []int
 
 func (u U) Len() int           { return len(u) }
