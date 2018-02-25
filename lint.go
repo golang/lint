@@ -430,7 +430,6 @@ func (f *file) lintPackageComment(reportErrors bool) bool {
 	}
 
 	if f.f.Doc == nil {
-		// f.errorf(f.f, 0.2, link(ref), category("comments"), "should have a package comment, unless it's in another file for this package")
 		return false
 	}
 	ok := true
