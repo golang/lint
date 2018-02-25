@@ -171,6 +171,22 @@ func (p *pkg) lint() []Problem {
 	p.scanSortable()
 	p.main = p.isMain()
 
+	packageCommentsOK := false
+	nonTestFiles := 0
+	for _, f := range p.files {
+		if f.lintPackageComment(false) {
+			packageCommentsOK = true
+			break
+		} else if !f.isTest() {
+			nonTestFiles++
+		}
+	}
+	if !packageCommentsOK && nonTestFiles > 0 {
+		ref := styleGuideBase + "#package-comments"
+		p.errorfAt(token.Position{Filename: "(--package--)"}, 0.8, link(ref), category("comments"),
+			"at least one file should have a valid package comment")
+	}
+
 	for _, f := range p.files {
 		f.lint()
 	}
@@ -192,7 +208,7 @@ type file struct {
 func (f *file) isTest() bool { return strings.HasSuffix(f.filename, "_test.go") }
 
 func (f *file) lint() {
-	f.lintPackageComment()
+	f.lintPackageComment(true)
 	f.lintImports()
 	f.lintBlankImports()
 	f.lintExported()
@@ -372,14 +388,12 @@ func (f *file) isMain() bool {
 	return false
 }
 
-// lintPackageComment checks package comments. It complains if
-// there is no package comment, or if it is not of the right form.
-// This has a notable false positive in that a package comment
-// could rightfully appear in a different file of the same package,
-// but that's not easy to fix since this linter is file-oriented.
-func (f *file) lintPackageComment() {
+// lintPackageComment checks package comments. It returns false iff the package
+// comment is missing or malformed. If reportErrors is true, it also emits any
+// errors it finds.
+func (f *file) lintPackageComment(reportErrors bool) bool {
 	if f.isTest() {
-		return
+		return false
 	}
 
 	const ref = styleGuideBase + "#package-comments"
@@ -408,24 +422,34 @@ func (f *file) lintPackageComment() {
 				Line:   endPos.Line + 1,
 				Column: 1,
 			}
-			f.pkg.errorfAt(pos, 0.9, link(ref), category("comments"), "package comment is detached; there should be no blank lines between it and the package statement")
-			return
+			if reportErrors {
+				f.pkg.errorfAt(pos, 0.9, link(ref), category("comments"), "package comment is detached; there should be no blank lines between it and the package statement")
+			}
+			return false
 		}
 	}
 
 	if f.f.Doc == nil {
-		f.errorf(f.f, 0.2, link(ref), category("comments"), "should have a package comment, unless it's in another file for this package")
-		return
+		// f.errorf(f.f, 0.2, link(ref), category("comments"), "should have a package comment, unless it's in another file for this package")
+		return false
 	}
+	ok := true
 	s := f.f.Doc.Text()
 	if ts := strings.TrimLeft(s, " \t"); ts != s {
-		f.errorf(f.f.Doc, 1, link(ref), category("comments"), "package comment should not have leading space")
+		if reportErrors {
+			f.errorf(f.f.Doc, 1, link(ref), category("comments"), "package comment should not have leading space")
+		}
 		s = ts
+		ok = false
 	}
 	// Only non-main packages need to keep to this form.
 	if !f.pkg.main && !strings.HasPrefix(s, prefix) {
-		f.errorf(f.f.Doc, 1, link(ref), category("comments"), `package comment should be of the form "%s..."`, prefix)
+		if reportErrors {
+			f.errorf(f.f.Doc, 1, link(ref), category("comments"), `package comment should be of the form "%s..."`, prefix)
+		}
+		ok = false
 	}
+	return ok
 }
 
 // lintBlankImports complains if a non-main package has blank imports that are

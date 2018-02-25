@@ -1,3 +1,4 @@
+// MATCH:0 /at least one file should have a valid package comment/
 // Test of package comment in an incorrect form.
 
 // Some random package doc that isn't in the right form.
