@@ -174,16 +174,16 @@ func (p *pkg) lint() []Problem {
 	p.main = p.isMain()
 
 	packageCommentsOK := false
-	nonTestFiles := 0
+	nonTestOrMainFiles := 0
 	for _, f := range p.files {
 		if f.lintPackageComment(false) {
 			packageCommentsOK = true
 			break
-		} else if !f.isTest() {
-			nonTestFiles++
+		} else if !f.isTest() && !f.isMain() {
+			nonTestOrMainFiles++
 		}
 	}
-	if !packageCommentsOK && nonTestFiles > 0 {
+	if !packageCommentsOK && nonTestOrMainFiles > 0 {
 		ref := styleGuideBase + "#package-comments"
 		p.errorfAt(token.Position{Filename: p.dir}, 0.8, link(ref), category("comments"),
 			"at least one file should have a valid package comment")
