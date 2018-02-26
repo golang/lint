@@ -1045,11 +1045,11 @@ func (f *file) lintElses() {
 		if !ok || ifStmt.Else == nil {
 			return true
 		}
-		if ignore[ifStmt] {
-			return true
-		}
 		if elseif, ok := ifStmt.Else.(*ast.IfStmt); ok {
 			ignore[elseif] = true
+			return true
+		}
+		if ignore[ifStmt] {
 			return true
 		}
 		if _, ok := ifStmt.Else.(*ast.BlockStmt); !ok {
