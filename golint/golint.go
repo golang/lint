@@ -75,7 +75,7 @@ func main() {
 				lintDir(dir)
 			}
 		case filesRun == 1:
-			lintFiles(args...)
+			lintFiles("", args...)
 		case pkgsRun == 1:
 			for _, pkg := range importPaths(args) {
 				lintPackage(pkg)
@@ -99,7 +99,7 @@ func exists(filename string) bool {
 	return err == nil
 }
 
-func lintFiles(filenames ...string) {
+func lintFiles(dir string, filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
 		src, err := ioutil.ReadFile(filename)
@@ -111,7 +111,7 @@ func lintFiles(filenames ...string) {
 	}
 
 	l := new(lint.Linter)
-	ps, err := l.LintFiles(files)
+	ps, err := l.LintFiles(dir, files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
@@ -155,5 +155,5 @@ func lintImportedPackage(pkg *build.Package, err error) {
 	}
 	// TODO(dsymonds): Do foo_test too (pkg.XTestGoFiles)
 
-	lintFiles(files...)
+	lintFiles(pkg.Dir, files...)
 }

@@ -76,13 +76,14 @@ func (p byPosition) Less(i, j int) bool {
 
 // Lint lints src.
 func (l *Linter) Lint(filename string, src []byte) ([]Problem, error) {
-	return l.LintFiles(map[string][]byte{filename: src})
+	return l.LintFiles("", map[string][]byte{filename: src})
 }
 
 // LintFiles lints a set of files of a single package.
 // The argument is a map of filename to source.
-func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
+func (l *Linter) LintFiles(dir string, files map[string][]byte) ([]Problem, error) {
 	pkg := &pkg{
+		dir:   dir,
 		fset:  token.NewFileSet(),
 		files: make(map[string]*file),
 	}
@@ -134,6 +135,7 @@ func isGenerated(src []byte) bool {
 
 // pkg represents a package being linted.
 type pkg struct {
+	dir   string
 	fset  *token.FileSet
 	files map[string]*file
 
@@ -183,7 +185,7 @@ func (p *pkg) lint() []Problem {
 	}
 	if !packageCommentsOK && nonTestFiles > 0 {
 		ref := styleGuideBase + "#package-comments"
-		p.errorfAt(token.Position{Filename: "(--package--)"}, 0.8, link(ref), category("comments"),
+		p.errorfAt(token.Position{Filename: p.dir}, 0.8, link(ref), category("comments"),
 			"at least one file should have a valid package comment")
 	}
 
