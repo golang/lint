@@ -43,6 +43,7 @@ var (
 		types.UntypedString:  "string",
 	}
 	allCapsRE     = regexp.MustCompile(`^[A-Z0-9_]+$`)
+  anyCapsRE     = regexp.MustCompile(`[A-Z]`)
 	commonMethods = map[string]bool{
 		"Error":     true,
 		"Read":      true,
@@ -630,6 +631,9 @@ func (f *file) lintNames() {
 	if strings.Contains(f.f.Name.Name, "_") && !strings.HasSuffix(f.f.Name.Name, "_test") {
 		f.errorf(f.f, 1, link("http://golang.org/doc/effective_go.html#package-names"), category("naming"), "don't use an underscore in package name")
 	}
+	if anyCapsRE.MatchString(f.f.Name.Name) {
+		f.errorf(f.f, 1, link("http://golang.org/doc/effective_go.html#package-names"), category("mixed-caps"), "don't use MixedCaps in package name; %s should be %s", f.f.Name.Name, strings.ToLower(f.f.Name.Name))
+	}
 
 	check := func(id *ast.Ident, thing string) {
 		if id.Name == "_" {
@@ -640,7 +644,12 @@ func (f *file) lintNames() {
 		}
 
 		// Handle two common styles from other languages that don't belong in Go.
-		if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
+		if len(id.Name) >= 5 && 
+    
+    
+    
+    
+    .MatchString(id.Name) && strings.Contains(id.Name, "_") {
 			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
 			return
 		}
@@ -1611,11 +1620,6 @@ func isBlank(id *ast.Ident) bool { return id != nil && id.Name == "_" }
 func isPkgDot(expr ast.Expr, pkg, name string) bool {
 	sel, ok := expr.(*ast.SelectorExpr)
 	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
-}
-
-func isZero(expr ast.Expr) bool {
-	lit, ok := expr.(*ast.BasicLit)
-	return ok && lit.Kind == token.INT && lit.Value == "0"
 }
 
 func isOne(expr ast.Expr) bool {
