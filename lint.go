@@ -43,7 +43,7 @@ var (
 		types.UntypedString:  "string",
 	}
 	allCapsRE     = regexp.MustCompile(`^[A-Z0-9_]+$`)
-  anyCapsRE     = regexp.MustCompile(`[A-Z]`)
+	anyCapsRE     = regexp.MustCompile(`[A-Z]`)
 	commonMethods = map[string]bool{
 		"Error":     true,
 		"Read":      true,
@@ -644,12 +644,7 @@ func (f *file) lintNames() {
 		}
 
 		// Handle two common styles from other languages that don't belong in Go.
-		if len(id.Name) >= 5 && 
-    
-    
-    
-    
-    .MatchString(id.Name) && strings.Contains(id.Name, "_") {
+		if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
 			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
 			return
 		}
