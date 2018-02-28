@@ -26,111 +26,7 @@ import (
 	"golang.org/x/tools/go/gcexportdata"
 )
 
-const (
-	styleGuideBase  = "https://golang.org/wiki/CodeReviewComments"
-	docCommentsLink = styleGuideBase + "#doc-comments"
-)
-
-var (
-	genHdr         = []byte("// Code generated ")
-	genFtr         = []byte(" DO NOT EDIT.")
-	basicTypeKinds = map[types.BasicKind]string{
-		types.UntypedBool:    "bool",
-		types.UntypedInt:     "int",
-		types.UntypedRune:    "rune",
-		types.UntypedFloat:   "float64",
-		types.UntypedComplex: "complex128",
-		types.UntypedString:  "string",
-	}
-	allCapsRE     = regexp.MustCompile(`^[A-Z0-9_]+$`)
-	anyCapsRE     = regexp.MustCompile(`[A-Z]`)
-	commonMethods = map[string]bool{
-		"Error":     true,
-		"Read":      true,
-		"ServeHTTP": true,
-		"String":    true,
-		"Write":     true,
-	}
-
-	// knownNameExceptions is a set of names that are known to be exempt from naming checks.
-	// This is usually because they are constrained by having to match names in the
-	// standard library.
-	knownNameExceptions = map[string]bool{
-		"LastInsertId": true, // must match database/sql
-		"kWh":          true,
-	}
-
-	// commonInitialisms is a set of common initialisms.
-	// Only add entries that are highly unlikely to be non-initialisms.
-	// For instance, "ID" is fine (Freudian code is rare), but "AND" is not.
-	commonInitialisms = map[string]bool{
-		"ACL":   true,
-		"API":   true,
-		"ASCII": true,
-		"CPU":   true,
-		"CSS":   true,
-		"DNS":   true,
-		"EOF":   true,
-		"GUID":  true,
-		"HTML":  true,
-		"HTTP":  true,
-		"HTTPS": true,
-		"ID":    true,
-		"IP":    true,
-		"JSON":  true,
-		"LHS":   true,
-		"QPS":   true,
-		"RAM":   true,
-		"RHS":   true,
-		"RPC":   true,
-		"SLA":   true,
-		"SMTP":  true,
-		"SQL":   true,
-		"SSH":   true,
-		"TCP":   true,
-		"TLS":   true,
-		"TTL":   true,
-		"UDP":   true,
-		"UI":    true,
-		"UID":   true,
-		"UUID":  true,
-		"URI":   true,
-		"URL":   true,
-		"UTF8":  true,
-		"VM":    true,
-		"XML":   true,
-		"XMPP":  true,
-		"XSRF":  true,
-		"XSS":   true,
-	}
-
-	// zeroLiteral is a set of ast.BasicLit values that are zero values.
-	// It is not exhaustive.
-	zeroLiteral = map[string]bool{
-		"false": true, // bool
-		// runes
-		`'\x00'`: true,
-		`'\000'`: true,
-		// strings
-		`""`: true,
-		"``": true,
-		// numerics
-		"0":   true,
-		"0.":  true,
-		"0.0": true,
-		"0i":  true,
-	}
-
-	// timeSuffixes is a list of name suffixes that imply a time unit.
-	// This is not an exhaustive list.
-	timeSuffixes = []string{
-		"Sec", "Secs", "Seconds",
-		"Msec", "Msecs",
-		"Milli", "Millis", "Milliseconds",
-		"Usec", "Usecs", "Microseconds",
-		"MS", "Ms",
-	}
-)
+const styleGuideBase = "https://golang.org/wiki/CodeReviewComments"
 
 // A Linter lints Go source code.
 type Linter struct {
@@ -217,6 +113,11 @@ func (l *Linter) LintFiles(files map[string][]byte) ([]Problem, error) {
 	}
 	return pkg.lint(), nil
 }
+
+var (
+	genHdr = []byte("// Code generated ")
+	genFtr = []byte(" DO NOT EDIT.")
+)
 
 // isGenerated reports whether the source file is generated code
 // according the rules from https://golang.org/s/generatedcode.
@@ -570,6 +471,8 @@ func (f *file) lintImports() {
 	}
 }
 
+const docCommentsLink = styleGuideBase + "#doc-comments"
+
 // lintExported examines the exported names.
 // It complains if any required doc comments are missing,
 // or if they are not of the right form. The exact rules are in
@@ -622,6 +525,19 @@ func (f *file) lintExported() {
 		}
 		return true
 	})
+}
+
+var (
+	allCapsRE = regexp.MustCompile(`^[A-Z0-9_]+$`)
+	anyCapsRE = regexp.MustCompile(`[A-Z]`)
+)
+
+// knownNameExceptions is a set of names that are known to be exempt from naming checks.
+// This is usually because they are constrained by having to match names in the
+// standard library.
+var knownNameExceptions = map[string]bool{
+	"LastInsertId": true, // must match database/sql
+	"kWh":          true,
 }
 
 // lintNames examines all names in the file.
@@ -827,6 +743,50 @@ func lintName(name string) (should string) {
 	return string(runes)
 }
 
+// commonInitialisms is a set of common initialisms.
+// Only add entries that are highly unlikely to be non-initialisms.
+// For instance, "ID" is fine (Freudian code is rare), but "AND" is not.
+var commonInitialisms = map[string]bool{
+	"ACL":   true,
+	"API":   true,
+	"ASCII": true,
+	"CPU":   true,
+	"CSS":   true,
+	"DNS":   true,
+	"EOF":   true,
+	"GUID":  true,
+	"HTML":  true,
+	"HTTP":  true,
+	"HTTPS": true,
+	"ID":    true,
+	"IP":    true,
+	"JSON":  true,
+	"LHS":   true,
+	"QPS":   true,
+	"RAM":   true,
+	"RHS":   true,
+	"RPC":   true,
+	"SLA":   true,
+	"SMTP":  true,
+	"SQL":   true,
+	"SSH":   true,
+	"TCP":   true,
+	"TLS":   true,
+	"TTL":   true,
+	"UDP":   true,
+	"UI":    true,
+	"UID":   true,
+	"UUID":  true,
+	"URI":   true,
+	"URL":   true,
+	"UTF8":  true,
+	"VM":    true,
+	"XML":   true,
+	"XMPP":  true,
+	"XSRF":  true,
+	"XSS":   true,
+}
+
 // lintTypeDoc examines the doc comment on a type.
 // It complains if they are missing from an exported type,
 // or if they are not of the standard form.
@@ -850,6 +810,14 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 	if !strings.HasPrefix(s, t.Name.Name+" ") {
 		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
 	}
+}
+
+var commonMethods = map[string]bool{
+	"Error":     true,
+	"Read":      true,
+	"ServeHTTP": true,
+	"String":    true,
+	"Write":     true,
 }
 
 // lintFuncDoc examines doc comments on functions and methods.
@@ -968,6 +936,23 @@ func (f *file) checkStutter(id *ast.Ident, thing string) {
 	if next, _ := utf8.DecodeRuneInString(rem); next == '_' || unicode.IsUpper(next) {
 		f.errorf(id, 0.8, link(styleGuideBase+"#package-names"), category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
 	}
+}
+
+// zeroLiteral is a set of ast.BasicLit values that are zero values.
+// It is not exhaustive.
+var zeroLiteral = map[string]bool{
+	"false": true, // bool
+	// runes
+	`'\x00'`: true,
+	`'\000'`: true,
+	// strings
+	`""`: true,
+	"``": true,
+	// numerics
+	"0":   true,
+	"0.":  true,
+	"0.0": true,
+	"0i":  true,
 }
 
 // lintVarDecls examines variable declarations. It complains about declarations with
@@ -1384,6 +1369,16 @@ func exportedType(typ types.Type) bool {
 	return true
 }
 
+// timeSuffixes is a list of name suffixes that imply a time unit.
+// This is not an exhaustive list.
+var timeSuffixes = []string{
+	"Sec", "Secs", "Seconds",
+	"Msec", "Msecs",
+	"Milli", "Millis", "Milliseconds",
+	"Usec", "Usecs", "Microseconds",
+	"MS", "Ms",
+}
+
 func (f *file) lintTimeNames() {
 	f.walk(func(node ast.Node) bool {
 		v, ok := node.(*ast.ValueSpec)
@@ -1634,6 +1629,15 @@ func isCgoExported(f *ast.FuncDecl) bool {
 		}
 	}
 	return false
+}
+
+var basicTypeKinds = map[types.BasicKind]string{
+	types.UntypedBool:    "bool",
+	types.UntypedInt:     "int",
+	types.UntypedRune:    "rune",
+	types.UntypedFloat:   "float64",
+	types.UntypedComplex: "complex128",
+	types.UntypedString:  "string",
 }
 
 // isUntypedConst reports whether expr is an untyped constant,
