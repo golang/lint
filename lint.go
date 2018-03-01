@@ -1084,20 +1084,25 @@ func (f *file) lintRanges() {
 		if !ok {
 			return true
 		}
-		if rs.Value == nil {
-			// for x = range m { ... }
-			return true // single var form
-		}
-		if !isIdent(rs.Value, "_") {
-			// for ?, y = range m { ... }
+
+		if isIdent(rs.Key, "_") && (rs.Value == nil || isIdent(rs.Value, "_")) {
+			p := f.errorf(rs.Key, 1, category("range-loop"), "should omit values from range; this loop is equivalent to `for range ...`")
+
+			newRS := *rs // shallow copy
+			newRS.Value = nil
+			newRS.Key = nil
+			p.ReplacementLine = f.firstLineOf(&newRS, rs)
+
 			return true
 		}
 
-		p := f.errorf(rs.Value, 1, category("range-loop"), "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
+		if isIdent(rs.Value, "_") {
+			p := f.errorf(rs.Value, 1, category("range-loop"), "should omit 2nd value from range; this loop is equivalent to `for %s %s range ...`", f.render(rs.Key), rs.Tok)
 
-		newRS := *rs // shallow copy
-		newRS.Value = nil
-		p.ReplacementLine = f.firstLineOf(&newRS, rs)
+			newRS := *rs // shallow copy
+			newRS.Value = nil
+			p.ReplacementLine = f.firstLineOf(&newRS, rs)
+		}
 
 		return true
 	})
