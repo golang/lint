@@ -24,7 +24,6 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/tools/go/ast/astutil"
-
 	"golang.org/x/tools/go/gcexportdata"
 )
 
@@ -1693,7 +1692,7 @@ func (f *file) srcLineWithMatch(node ast.Node, pattern string) (m []string) {
 	return rx.FindStringSubmatch(line)
 }
 
-// imports returns true if the current file imports the specified package path
+// imports returns true if the current file imports the specified package path.
 func (f *file) imports(importPath string) bool {
 	all := astutil.Imports(f.fset, f.f)
 	for _, p := range all {
