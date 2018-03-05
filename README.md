@@ -6,7 +6,7 @@ Golint is a linter for Go source code.
 
 Golint requires Go 1.6 or later.
 
-    go get -u github.com/golang/lint/golint
+    go get -u golang.org/x/lint/golint
 
 ## Usage
 
@@ -41,15 +41,18 @@ Golint makes suggestions for many of the mechanically checkable items listed in
 [Effective Go](https://golang.org/doc/effective_go.html) and the
 [CodeReviewComments wiki page](https://golang.org/wiki/CodeReviewComments).
 
-If you find an established style that is frequently violated, and which
-you think golint could statically check,
-[file an issue](https://github.com/golang/lint/issues).
+## Scope
+
+Golint is meant to carry out the stylistic conventions put forth in
+[Effective Go](https://golang.org/doc/effective_go.html) and
+[CodeReviewComments](https://golang.org/wiki/CodeReviewComments).
+Changes that are not aligned with those documents will not be considered.
 
 ## Contributions
 
-Contributions to this project are welcome, though please send mail before
-starting work on anything major. Contributors retain their copyright, so we
-need you to fill out
+Contributions to this project are welcome provided they are [in scope](#scope),
+though please send mail before starting work on anything major.
+Contributors retain their copyright, so we need you to fill out
 [a short form](https://developers.google.com/open-source/cla/individual)
 before we can accept your contribution.
 

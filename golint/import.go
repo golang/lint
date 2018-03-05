@@ -22,13 +22,12 @@ import (
 	"strings"
 )
 
-var buildContext = build.Default
-
 const vendorDir = "vendor"
 
 var (
-	goroot    = filepath.Clean(runtime.GOROOT())
-	gorootSrc = filepath.Join(goroot, "src")
+	buildContext = build.Default
+	goroot       = filepath.Clean(runtime.GOROOT())
+	gorootSrc    = filepath.Join(goroot, "src")
 )
 
 // importPathsNoDotExpansion returns the import paths to use for the given
