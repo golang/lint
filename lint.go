@@ -1703,7 +1703,6 @@ func (f *file) imports(importPath string) bool {
 			}
 		}
 	}
-
 	return false
 }
 
