@@ -1310,6 +1310,9 @@ func (f *file) lintErrorReturn() {
 		if len(ret) <= 1 {
 			return true
 		}
+		if isIdent(ret[len(ret)-1].Type, "error") {
+			return true
+		}
 		// An error return parameter should be the last parameter.
 		// Flag any error parameters found before the last.
 		for _, r := range ret[:len(ret)-1] {
