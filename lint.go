@@ -200,7 +200,6 @@ func (f *file) lint() {
 	f.lintNames()
 	f.lintVarDecls()
 	f.lintElses()
-	f.lintIfError()
 	f.lintRanges()
 	f.lintErrorf()
 	f.lintErrors()
@@ -1505,63 +1504,6 @@ func (f *file) containsComments(start, end token.Pos) bool {
 		}
 	}
 	return false
-}
-
-func (f *file) lintIfError() {
-	f.walk(func(node ast.Node) bool {
-		switch v := node.(type) {
-		case *ast.BlockStmt:
-			for i := 0; i < len(v.List)-1; i++ {
-				// if var := whatever; var != nil { return var }
-				s, ok := v.List[i].(*ast.IfStmt)
-				if !ok || s.Body == nil || len(s.Body.List) != 1 || s.Else != nil {
-					continue
-				}
-				assign, ok := s.Init.(*ast.AssignStmt)
-				if !ok || len(assign.Lhs) != 1 || !(assign.Tok == token.DEFINE || assign.Tok == token.ASSIGN) {
-					continue
-				}
-				id, ok := assign.Lhs[0].(*ast.Ident)
-				if !ok {
-					continue
-				}
-				expr, ok := s.Cond.(*ast.BinaryExpr)
-				if !ok || expr.Op != token.NEQ {
-					continue
-				}
-				if lhs, ok := expr.X.(*ast.Ident); !ok || lhs.Name != id.Name {
-					continue
-				}
-				if rhs, ok := expr.Y.(*ast.Ident); !ok || rhs.Name != "nil" {
-					continue
-				}
-				r, ok := s.Body.List[0].(*ast.ReturnStmt)
-				if !ok || len(r.Results) != 1 {
-					continue
-				}
-				if r, ok := r.Results[0].(*ast.Ident); !ok || r.Name != id.Name {
-					continue
-				}
-
-				// return nil
-				r, ok = v.List[i+1].(*ast.ReturnStmt)
-				if !ok || len(r.Results) != 1 {
-					continue
-				}
-				if r, ok := r.Results[0].(*ast.Ident); !ok || r.Name != "nil" {
-					continue
-				}
-
-				// check if there are any comments explaining the construct, don't emit an error if there are some.
-				if f.containsComments(s.Pos(), r.Pos()) {
-					continue
-				}
-
-				f.errorf(v.List[i], 0.9, "redundant if ...; err != nil check, just return error instead.")
-			}
-		}
-		return true
-	})
 }
 
 // receiverType returns the named type of the method receiver, sans "*",
