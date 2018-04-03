@@ -1,85 +1,68 @@
-Golint is a linter for Go source code.
+[![wercker status](https://app.wercker.com/status/c390b2a2d61a54339208ab6534382534/m "wercker status")](https://app.wercker.com/project/bykey/c390b2a2d61a54339208ab6534382534)
 
-[![Build Status](https://travis-ci.org/golang/lint.svg?branch=master)](https://travis-ci.org/golang/lint)
+Original: https://github.com/golang/lint
 
-## Installation
+Golintx is a linter for Go source code.
 
-Golint requires Go 1.6 or later.
+# Differences From Original golint
 
-    go get -u golang.org/x/lint/golint
-
-## Usage
-
-Invoke `golint` with one or more filenames, directories, or packages named
-by its import path. Golint uses the same
-[import path syntax](https://golang.org/cmd/go/#hdr-Import_path_syntax) as
-the `go` command and therefore
-also supports relative import paths like `./...`. Additionally the `...`
-wildcard can be used as suffix on relative and absolute file paths to recurse
-into them.
-
-The output of this tool is a list of suggestions in Vim quickfix format,
-which is accepted by lots of different editors.
-
-## Purpose
-
-Golint differs from gofmt. Gofmt reformats Go source code, whereas
-golint prints out style mistakes.
-
-Golint differs from govet. Govet is concerned with correctness, whereas
-golint is concerned with coding style. Golint is in use at Google, and it
-seeks to match the accepted style of the open source Go project.
-
-The suggestions made by golint are exactly that: suggestions.
-Golint is not perfect, and has both false positives and false negatives.
-Do not treat its output as a gold standard. We will not be adding pragmas
-or other knobs to suppress specific warnings, so do not expect or require
-code to be completely "lint-free".
-In short, this tool is not, and will never be, trustworthy enough for its
-suggestions to be enforced automatically, for example as part of a build process.
-Golint makes suggestions for many of the mechanically checkable items listed in
-[Effective Go](https://golang.org/doc/effective_go.html) and the
-[CodeReviewComments wiki page](https://golang.org/wiki/CodeReviewComments).
-
-## Scope
-
-Golint is meant to carry out the stylistic conventions put forth in
-[Effective Go](https://golang.org/doc/effective_go.html) and
-[CodeReviewComments](https://golang.org/wiki/CodeReviewComments).
-Changes that are not aligned with those documents will not be considered.
-
-## Contributions
-
-Contributions to this project are welcome provided they are [in scope](#scope),
-though please send mail before starting work on anything major.
-Contributors retain their copyright, so we need you to fill out
-[a short form](https://developers.google.com/open-source/cla/individual)
-before we can accept your contribution.
-
-## Vim
-
-Add this to your ~/.vimrc:
-
-    set rtp+=$GOPATH/src/github.com/golang/lint/misc/vim
-
-If you have multiple entries in your GOPATH, replace `$GOPATH` with the right value.
-
-Running `:Lint` will run golint on the current file and populate the quickfix list.
-
-Optionally, add this to your `~/.vimrc` to automatically run `golint` on `:w`
-
-    autocmd BufWritePost,FileWritePost *.go execute 'Lint' | cwindow
+* Support per-directory config files
+    * if a config file on lint-target directory does not exists, search files in ancestor directories recursively.
+* exit(1) if any problem exists
+* Support multi directories on command line
+    * ex: golintx $(glide novendor)
 
 
-## Emacs
+# Installation
 
-Add this to your `.emacs` file:
+Golintx requires Go 1.6 or later.
 
-    (add-to-list 'load-path (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs"))
-    (require 'golint)
+    go get -u github.com/haruyama/golintx/golintx
 
-If you have multiple entries in your GOPATH, replace `$GOPATH` with the right value.
+# Config File (.golintx.hcl)
 
-Running M-x golint will run golint on the current file.
-
-For more usage, see [Compilation-Mode](http://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation-Mode.html).
+```
+exclude {
+        // array of categories which golintx does not report
+        categories = ["comments"]
+}
+// array of initialisms
+initialisms = [
+        "API",
+        "ASCII",
+        "CPU",
+        "CSS",
+        "DNS",
+        "EOF",
+        "GUID",
+        "HTML",
+        "HTTP",
+        "HTTPS",
+        // "ID",
+        "IP",
+        "JSON",
+        "LHS",
+        "QPS",
+        "RAM",
+        "RHS",
+        "RPC",
+        "SLA",
+        "SMTP",
+        "SQL",
+        "SSH",
+        "TCP",
+        "TLS",
+        "TTL",
+        "UDP",
+        "UI",
+        "UID",
+        "UUID",
+        // "URI",
+        // "URL",
+        "UTF8",
+        "VM",
+        "XML",
+        "XSRF",
+        "XSS",
+]
+```

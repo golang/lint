@@ -16,12 +16,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/lint"
+	"github.com/haruyama/golintx"
 )
 
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
-	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	setExitStatus = flag.Bool("set_exit_status", true, "set exit status to 1 if any issues are found")
 	suggestions   int
 )
 
@@ -82,7 +82,6 @@ func main() {
 			}
 		}
 	}
-
 	if *setExitStatus && suggestions > 0 {
 		fmt.Fprintf(os.Stderr, "Found %d lint suggestions; failing.\n", suggestions)
 		os.Exit(1)
@@ -102,6 +101,15 @@ func exists(filename string) bool {
 func lintFiles(filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
+		if strings.HasSuffix(filename, "/...") && isDir(filename[:len(filename)-4]) {
+			for _, dirname := range allPackagesInFS(filename) {
+				lintDir(dirname)
+			}
+			continue
+		} else if isDir(filename) {
+			lintDir(filename)
+			continue
+		}
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -110,7 +118,7 @@ func lintFiles(filenames ...string) {
 		files[filename] = src
 	}
 
-	l := new(lint.Linter)
+	l := new(golintx.Linter)
 	ps, err := l.LintFiles(files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

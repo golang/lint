@@ -1,0 +1,4 @@
+package: github.com/haruyama/golintx
+import:
+- package: github.com/hashicorp/hcl
+- package: golang.org/x/tools
