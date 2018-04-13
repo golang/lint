@@ -540,6 +540,20 @@ var knownNameExceptions = map[string]bool{
 	"kWh":          true,
 }
 
+// reservedWordSubstitutions is a set of reserved words mapped to their corresponding substitution.
+// An empty string means there is no obvious substitution.
+var reservedWordSubstitutions = map[string]string{
+	// reserved words with substitutions
+	"type":   "typ",
+	"struct": "structure",
+	// reserved words without substitutions
+	"break": "", "case": "", "chan": "", "const": "", "continue": "",
+	"default": "", "defer": "", "else": "", "fallthrough": "", "for": "",
+	"func": "", "go": "", "goto": "", "if": "", "import": "",
+	"interface": "", "map": "", "package": "", "range": "", "return": "",
+	"select": "", "switch": "", "var": "",
+}
+
 // lintNames examines all names in the file.
 // It complains if any use underscores or incorrect known initialisms.
 func (f *file) lintNames() {
@@ -549,6 +563,18 @@ func (f *file) lintNames() {
 	}
 	if anyCapsRE.MatchString(f.f.Name.Name) {
 		f.errorf(f.f, 1, link("http://golang.org/doc/effective_go.html#package-names"), category("mixed-caps"), "don't use MixedCaps in package name; %s should be %s", f.f.Name.Name, strings.ToLower(f.f.Name.Name))
+	}
+
+	checkReserved := func(id *ast.Ident) string {
+		simpleName := strings.Replace(id.Name, "_", "", -1)
+		simpleName = strings.ToLower(simpleName)
+		if substitution, exists := reservedWordSubstitutions[simpleName]; exists {
+			if substitution == "" {
+				return " (to avoid conflict with a reserved word, select an alternative)"
+			}
+			return " (to avoid conflict with this reserved word, choose '" + substitution + "')"
+		}
+		return ""
 	}
 
 	check := func(id *ast.Ident, thing string) {
@@ -561,12 +587,12 @@ func (f *file) lintNames() {
 
 		// Handle two common styles from other languages that don't belong in Go.
 		if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
-			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
+			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase%s", checkReserved(id))
 			return
 		}
 		if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
 			should := string(id.Name[1]+'a'-'A') + id.Name[2:]
-			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
+			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s%s", thing, id.Name, should, checkReserved(id))
 		}
 
 		should := lintName(id.Name)
@@ -575,10 +601,11 @@ func (f *file) lintNames() {
 		}
 
 		if len(id.Name) > 2 && strings.Contains(id.Name[1:], "_") {
-			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
+			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), "don't use underscores in Go names; %s %s should be %s%s", thing, id.Name, should, checkReserved(id))
 			return
 		}
-		f.errorf(id, 0.8, link(styleGuideBase+"#initialisms"), category("naming"), "%s %s should be %s", thing, id.Name, should)
+		f.errorf(id, 0.8, link(styleGuideBase+"#initialisms"), category("naming"), "%s %s should be %s", thing, id.Name, should, checkReserved(id))
+		return
 	}
 	checkList := func(fl *ast.FieldList, thing string) {
 		if fl == nil {
