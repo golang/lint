@@ -726,7 +726,7 @@ func lintName(name string) (should string) {
 
 		// [w,i) is a word.
 		word := string(runes[w:i])
-		if u := strings.ToUpper(word); commonInitialisms[u] {
+		if u := strings.ToUpper(word); CommonInitialisms[u] {
 			// Keep consistent case, which is lowercase only at the start.
 			if w == 0 && unicode.IsLower(runes[w]) {
 				u = strings.ToLower(u)
@@ -743,10 +743,10 @@ func lintName(name string) (should string) {
 	return string(runes)
 }
 
-// commonInitialisms is a set of common initialisms.
+// CommonInitialisms is a set of common initialisms.
 // Only add entries that are highly unlikely to be non-initialisms.
 // For instance, "ID" is fine (Freudian code is rare), but "AND" is not.
-var commonInitialisms = map[string]bool{
+var CommonInitialisms = map[string]bool{
 	"ACL":   true,
 	"API":   true,
 	"ASCII": true,
