@@ -22,6 +22,8 @@ import (
 	"strings"
 )
 
+const vendorDir = "vendor"
+
 var (
 	buildContext = build.Default
 	goroot       = filepath.Clean(runtime.GOROOT())
@@ -285,10 +287,8 @@ func matchPackagesInFS(pattern string) []string {
 			path = filepath.Clean(path)
 		}
 
-		// Avoid .foo, _foo, and testdata directory trees, but do not avoid "." or "..".
 		_, elem := filepath.Split(path)
-		dot := strings.HasPrefix(elem, ".") && elem != "." && elem != ".."
-		if dot || strings.HasPrefix(elem, "_") || elem == "testdata" {
+		if ignore(elem) {
 			return filepath.SkipDir
 		}
 
@@ -306,4 +306,10 @@ func matchPackagesInFS(pattern string) []string {
 		return nil
 	})
 	return pkgs
+}
+
+func ignore(elem string) bool {
+	// Avoid .foo, _foo, and testdata directory trees, but do not avoid "." or "..".
+	dot := strings.HasPrefix(elem, ".") && elem != "." && elem != ".."
+	return dot || strings.HasPrefix(elem, "_") || elem == "testdata" || elem == vendorDir
 }

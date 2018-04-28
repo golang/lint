@@ -41,7 +41,7 @@ func TestAll(t *testing.T) {
 		t.Fatalf("no files in %v", baseDir)
 	}
 	for _, fi := range fis {
-		if !rx.MatchString(fi.Name()) {
+		if !rx.MatchString(fi.Name()) || fi.IsDir() {
 			continue
 		}
 		//t.Logf("Testing %s", fi.Name())
