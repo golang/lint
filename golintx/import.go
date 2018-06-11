@@ -134,7 +134,7 @@ func treeCanMatchPattern(pattern string) func(name string) bool {
 func allPackages(pattern string) []string {
 	pkgs := matchPackages(pattern)
 	if len(pkgs) == 0 {
-		fmt.Fprintf(os.Stderr, "warning: %q matched no packages\n", pattern)
+		_, _ = fmt.Fprintf(os.Stderr, "warning: %q matched no packages\n", pattern)
 	}
 	return pkgs
 }
@@ -245,7 +245,7 @@ func matchPackages(pattern string) []string {
 func allPackagesInFS(pattern string) []string {
 	pkgs := matchPackagesInFS(pattern)
 	if len(pkgs) == 0 {
-		fmt.Fprintf(os.Stderr, "warning: %q matched no packages\n", pattern)
+		_, _ = fmt.Fprintf(os.Stderr, "warning: %q matched no packages\n", pattern)
 	}
 	return pkgs
 }
