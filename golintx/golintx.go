@@ -26,12 +26,12 @@ var (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "\tgolint [flags] # runs on package in current directory\n")
-	fmt.Fprintf(os.Stderr, "\tgolint [flags] [packages]\n")
-	fmt.Fprintf(os.Stderr, "\tgolint [flags] [directories] # where a '/...' suffix includes all sub-directories\n")
-	fmt.Fprintf(os.Stderr, "\tgolint [flags] [files] # all must belong to a single package\n")
-	fmt.Fprintf(os.Stderr, "Flags:\n")
+	_, _ = fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "\tgolint [flags] # runs on package in current directory\n")
+	_, _ = fmt.Fprintf(os.Stderr, "\tgolint [flags] [packages]\n")
+	_, _ = fmt.Fprintf(os.Stderr, "\tgolint [flags] [directories] # where a '/...' suffix includes all sub-directories\n")
+	_, _ = fmt.Fprintf(os.Stderr, "\tgolint [flags] [files] # all must belong to a single package\n")
+	_, _ = fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
 }
 
@@ -83,7 +83,7 @@ func main() {
 		}
 	}
 	if *setExitStatus && suggestions > 0 {
-		fmt.Fprintf(os.Stderr, "Found %d lint suggestions; failing.\n", suggestions)
+		_, _ = fmt.Fprintf(os.Stderr, "Found %d lint suggestions; failing.\n", suggestions)
 		os.Exit(1)
 	}
 }
@@ -112,7 +112,7 @@ func lintFiles(filenames ...string) {
 		}
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
 			continue
 		}
 		files[filename] = src
@@ -121,7 +121,7 @@ func lintFiles(filenames ...string) {
 	l := new(golintx.Linter)
 	ps, err := l.LintFiles(files)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
 	for _, p := range ps {
@@ -148,7 +148,7 @@ func lintImportedPackage(pkg *build.Package, err error) {
 			// Don't complain if the failure is due to no Go source files.
 			return
 		}
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		return
 	}
 
