@@ -61,7 +61,7 @@ before we can accept your contribution.
 
 Add this to your ~/.vimrc:
 
-    set rtp+=$GOPATH/src/github.com/golang/lint/misc/vim
+    set rtp+=$GOPATH/src/golang.org/x/lint/misc/vim
 
 If you have multiple entries in your GOPATH, replace `$GOPATH` with the right value.
 
