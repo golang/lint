@@ -23,6 +23,7 @@ var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
 	suggestions   int
+	errors        int
 )
 
 func usage() {
@@ -87,6 +88,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Found %d lint suggestions; failing.\n", suggestions)
 		os.Exit(1)
 	}
+	if *setExitStatus && errors > 0 {
+		fmt.Fprintf(os.Stderr, "Found %d errors; failing.\n", errors)
+		os.Exit(1)
+	}
 }
 
 func isDir(filename string) bool {
@@ -114,6 +119,7 @@ func lintFiles(filenames ...string) {
 	ps, err := l.LintFiles(files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
+		errors++
 		return
 	}
 	for _, p := range ps {
@@ -141,6 +147,7 @@ func lintImportedPackage(pkg *build.Package, err error) {
 			return
 		}
 		fmt.Fprintln(os.Stderr, err)
+		errors++
 		return
 	}
 
