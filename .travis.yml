@@ -6,6 +6,8 @@ go:
   - 1.9.x
   - master
 
+go_import_path: golang.org/x/lint
+
 install:
   - go get -t -v ./...
 
