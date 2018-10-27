@@ -1472,6 +1472,14 @@ func (f *file) lintContextArgs() {
 		if !ok || len(fn.Type.Params.List) <= 1 {
 			return true
 		}
+
+		// In case that the first parameter is *testing.T, we don't want
+		// to fail the linter. For example:
+		// 		func testContext(t *testint.T, ctx context.Context)
+		if isPtrPkgDot(fn.Type.Params.List[0].Type, "testing", "T") {
+			return true
+		}
+
 		// A context.Context should be the first parameter of a function.
 		// Flag any that show up after the first.
 		for _, arg := range fn.Type.Params.List[1:] {
@@ -1561,6 +1569,13 @@ func isIdent(expr ast.Expr, ident string) bool {
 // If id == nil, the answer is false.
 func isBlank(id *ast.Ident) bool { return id != nil && id.Name == "_" }
 
+// isPtrPkgDot checks if the expression is *<pkg>.<name>.
+func isPtrPkgDot(expr ast.Expr, pkg, name string) bool {
+	star, ok := expr.(*ast.StarExpr)
+	return ok && isPkgDot(star.X, pkg, name)
+}
+
+// isPkgDot checks if the expression is <pkg>.<name>
 func isPkgDot(expr ast.Expr, pkg, name string) bool {
 	sel, ok := expr.(*ast.SelectorExpr)
 	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)

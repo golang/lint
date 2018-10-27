@@ -5,6 +5,7 @@ package foo
 
 import (
 	"context"
+	"testing"
 )
 
 // A proper context.Context location
@@ -13,6 +14,10 @@ func x(ctx context.Context) { // ok
 
 // A proper context.Context location
 func x(ctx context.Context, s string) { // ok
+}
+
+// A test helper function with context object allowes context to be not the first argument.
+func x(t *testing.T, ctx context.Context) { // ok
 }
 
 // An invalid context.Context location
