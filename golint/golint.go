@@ -8,6 +8,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"go/build"
@@ -22,6 +23,7 @@ import (
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	jsonOutput    = flag.Bool("json", false, "output in a structured json format")
 	suggestions   int
 )
 
@@ -116,10 +118,31 @@ func lintFiles(filenames ...string) {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
+	var problems []lint.Problem
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
-			fmt.Printf("%v: %s\n", p.Position, p.Text)
+			problems = append(problems, p)
 			suggestions++
+		}
+	}
+	outputProblems(problems)
+}
+
+func outputProblems(ps []lint.Problem) {
+	if *jsonOutput {
+		if len(ps) == 0 {
+			fmt.Print("[]")
+			return
+		}
+		b, err := json.Marshal(ps)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			return
+		}
+		fmt.Printf(string(b))
+	} else {
+		for _, p := range ps {
+			fmt.Printf("%v: %s\n", p.Position, p.Text)
 		}
 	}
 }
