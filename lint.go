@@ -561,8 +561,16 @@ func (f *file) lintNames() {
 
 		// Handle two common styles from other languages that don't belong in Go.
 		if len(id.Name) >= 5 && allCapsRE.MatchString(id.Name) && strings.Contains(id.Name, "_") {
-			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
-			return
+			capCount := 0
+			for _, c := range id.Name {
+				if 'A' <= c && c <= 'Z' {
+					capCount++
+				}
+			}
+			if capCount >= 2 {
+				f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use ALL_CAPS in Go names; use CamelCase")
+				return
+			}
 		}
 		if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
 			should := string(id.Name[1]+'a'-'A') + id.Name[2:]
