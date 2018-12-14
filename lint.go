@@ -540,6 +540,18 @@ var knownNameExceptions = map[string]bool{
 	"kWh":          true,
 }
 
+func isInTopLevel(f *ast.File, ident *ast.Ident) bool {
+	path, _ := astutil.PathEnclosingInterval(f, ident.Pos(), ident.End())
+	for _, f := range path {
+		switch f.(type) {
+		case *ast.File, *ast.GenDecl, *ast.ValueSpec, *ast.Ident:
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 // lintNames examines all names in the file.
 // It complains if any use underscores or incorrect known initialisms.
 func (f *file) lintNames() {
@@ -572,9 +584,11 @@ func (f *file) lintNames() {
 				return
 			}
 		}
-		if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
-			should := string(id.Name[1]+'a'-'A') + id.Name[2:]
-			f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
+		if thing == "const" || (thing == "var" && isInTopLevel(f.f, id)) {
+			if len(id.Name) > 2 && id.Name[0] == 'k' && id.Name[1] >= 'A' && id.Name[1] <= 'Z' {
+				should := string(id.Name[1]+'a'-'A') + id.Name[2:]
+				f.errorf(id, 0.8, link(styleGuideBase+"#mixed-caps"), category("naming"), "don't use leading k in Go names; %s %s should be %s", thing, id.Name, should)
+			}
 		}
 
 		should := lintName(id.Name)
