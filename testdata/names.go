@@ -59,9 +59,31 @@ const (
 	CPP_CONST   = 1 // MATCH /ALL_CAPS.*CamelCase/
 	kLeadingKay = 2 // MATCH /k.*leadingKay/
 
-	HTML  = 3 // okay; no underscore
-	X509B = 4 // ditto
+	HTML    = 3 // okay; no underscore
+	X509B   = 4 // ditto
+	V1_10_5 = 5 // okay; fewer than two uppercase letters
 )
+
+var kVarsAreSometimesUsedAsConstants = 0 // MATCH /k.*varsAreSometimesUsedAsConstants/
+var (
+	kVarsAreSometimesUsedAsConstants2 = 0 // MATCH /k.*varsAreSometimesUsedAsConstants2/
+)
+
+var kThisIsNotOkay = struct { // MATCH /k.*thisIsNotOkay/
+	kThisIsOkay bool
+}{}
+
+func kThisIsOkay() { // this is okay because this is a function name
+	var kThisIsAlsoOkay = 1 // this is okay because this is a non-top-level variable
+	_ = kThisIsAlsoOkay
+	const kThisIsNotOkay = 2 // MATCH /k.*thisIsNotOkay/
+}
+
+var anotherFunctionScope = func() {
+	var kThisIsOkay = 1 // this is okay because this is a non-top-level variable
+	_ = kThisIsOkay
+	const kThisIsNotOkay = 2 // MATCH /k.*thisIsNotOkay/}
+}
 
 func f(bad_name int)                    {}            // MATCH /underscore.*func parameter.*bad_name/
 func g() (no_way int)                   { return 0 }  // MATCH /underscore.*func result.*no_way/
