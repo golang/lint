@@ -45,38 +45,38 @@ func main() {
 		// dirsRun, filesRun, and pkgsRun indicate whether golint is applied to
 		// directory, file or package targets. The distinction affects which
 		// checks are run. It is no valid to mix target types.
-		var dirsRun, filesRun, pkgsRun int
+		var dirsRun, filesRun, pkgsRun bool
 		var args []string
 		for _, arg := range flag.Args() {
 			if strings.HasSuffix(arg, "/...") && isDir(arg[:len(arg)-len("/...")]) {
-				dirsRun = 1
+				dirsRun = true
 				for _, dirname := range allPackagesInFS(arg) {
 					args = append(args, dirname)
 				}
 			} else if isDir(arg) {
-				dirsRun = 1
+				dirsRun = true
 				args = append(args, arg)
 			} else if exists(arg) {
-				filesRun = 1
+				filesRun = true
 				args = append(args, arg)
 			} else {
-				pkgsRun = 1
+				pkgsRun = true
 				args = append(args, arg)
 			}
 		}
 
-		if dirsRun+filesRun+pkgsRun != 1 {
+		if !dirsRun && !filesRun && !pkgsRun {
 			usage()
 			os.Exit(2)
 		}
 		switch {
-		case dirsRun == 1:
+		case dirsRun:
 			for _, dir := range args {
 				lintDir(dir)
 			}
-		case filesRun == 1:
+		case filesRun:
 			lintFiles(args...)
-		case pkgsRun == 1:
+		case pkgsRun:
 			for _, pkg := range importPaths(args) {
 				lintPackage(pkg)
 			}
