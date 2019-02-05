@@ -65,7 +65,7 @@ func main() {
 			}
 		}
 
-		if !dirsRun && !filesRun && !pkgsRun {
+		if needUsage(dirsRun, filesRun, pkgsRun) {
 			usage()
 			os.Exit(2)
 		}
@@ -97,6 +97,22 @@ func isDir(filename string) bool {
 func exists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
+}
+
+func needUsage(runs ...bool) bool {
+	need := true
+	for _, run := range runs {
+		if !run {
+			continue
+		}
+
+		if !need {
+			return true
+		}
+		need = false
+	}
+
+	return need
 }
 
 func lintFiles(filenames ...string) {
