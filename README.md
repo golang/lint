@@ -8,6 +8,8 @@ Golint requires a
 [supported release of Go](https://golang.org/doc/devel/release.html#policy).
 
     go get -u golang.org/x/lint/golint
+    
+Golint is installed to the folder `$GOPATH/bin` (or if `$GOPATH` is not set: `$HOME/go/bin`). For `golint` to be used globally add this folder to the `$PATH` environment setting.
 
 ## Usage
 
