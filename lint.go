@@ -776,6 +776,7 @@ var commonInitialisms = map[string]bool{
 	"CSS":   true,
 	"DNS":   true,
 	"EOF":   true,
+	"GID":   true,
 	"GUID":  true,
 	"HTML":  true,
 	"HTTP":  true,
