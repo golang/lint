@@ -1014,7 +1014,7 @@ func (f *file) lintElses() {
 			if shortDecl {
 				extra = " (move short variable declaration to its own line if necessary)"
 			}
-			f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#indent-error-flow"), category("indent"), "if block ends with a return statement, so drop this else and outdent its block"+extra)
+			f.errorf(ifStmt.Else, 1, link(styleGuideBase+"#indent-error-flow"), category("indent"), "'if' block ends with a return statement, so drop the 'else' keyword and outdent its block"+extra)
 		}
 		return true
 	})
