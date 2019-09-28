@@ -596,6 +596,9 @@ func (f *file) lintNames() {
 		}
 
 		if len(id.Name) > 2 && strings.Contains(id.Name[1:], "_") {
+			if keywords[should] {
+				return // refrain from suggesting the use of a keyword as a valid name.
+			}
 			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)
 			return
 		}
@@ -694,6 +697,36 @@ func (f *file) lintNames() {
 		}
 		return true
 	})
+}
+
+// keywords is the set of Go language keywords.
+// see https://golang.org/ref/spec#Keywords
+var keywords = map[string]bool{
+	"break":       true,
+	"default":     true,
+	"func":        true,
+	"interface":   true,
+	"select":      true,
+	"case":        true,
+	"defer":       true,
+	"go":          true,
+	"map":         true,
+	"struct":      true,
+	"chan":        true,
+	"else":        true,
+	"goto":        true,
+	"package":     true,
+	"switch":      true,
+	"const":       true,
+	"fallthrough": true,
+	"if":          true,
+	"range":       true,
+	"type":        true,
+	"continue":    true,
+	"for":         true,
+	"import":      true,
+	"return":      true,
+	"var":         true,
 }
 
 // lintName returns a different name if it should be different.
