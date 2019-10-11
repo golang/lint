@@ -551,6 +551,11 @@ func isInTopLevel(f *ast.File, ident *ast.Ident) bool {
 	return true
 }
 
+// isGoKeyword returns true if "name" is a reserved keyword.
+func isGoKeyword(name string) bool {
+	return keywords[name]
+}
+
 // lintNames examines all names in the file.
 // It complains if any use underscores or incorrect known initialisms.
 func (f *file) lintNames() {
@@ -596,7 +601,7 @@ func (f *file) lintNames() {
 		}
 
 		if len(id.Name) > 2 && strings.Contains(id.Name[1:], "_") {
-			if keywords[should] {
+			if isGoKeyword(should) {
 				return // refrain from suggesting the use of a keyword as a valid name.
 			}
 			f.errorf(id, 0.9, link("http://golang.org/doc/effective_go.html#mixed-caps"), category("naming"), "don't use underscores in Go names; %s %s should be %s", thing, id.Name, should)

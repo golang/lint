@@ -252,6 +252,23 @@ func TestLintName(t *testing.T) {
 	}
 }
 
+func TestKeyword(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{"type", true},
+		{"goto", true},
+		{"while", false},
+	}
+	for _, test := range tests {
+		got := isGoKeyword(test.name)
+		if got != test.want {
+			t.Errorf("isGoKeyword(%q) = %t, want %t", test.name, got, test.want)
+		}
+	}
+}
+
 func TestExportedType(t *testing.T) {
 	tests := []struct {
 		typString string
