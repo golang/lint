@@ -766,7 +766,6 @@ func lintName(name string) (should string) {
 
 // commonInitialisms is a set of common initialisms.
 // Only add entries that are highly unlikely to be non-initialisms.
-// For instance, "ID" is fine (Freudian code is rare), but "AND" is not.
 var commonInitialisms = map[string]bool{
 	"ACL":   true,
 	"API":   true,
@@ -779,7 +778,6 @@ var commonInitialisms = map[string]bool{
 	"HTML":  true,
 	"HTTP":  true,
 	"HTTPS": true,
-	"ID":    true,
 	"IP":    true,
 	"JSON":  true,
 	"LHS":   true,
