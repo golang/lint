@@ -19,8 +19,6 @@ type t_wow struct { // MATCH /underscore.*type.*t_wow/
 	Url    *url.URL // MATCH /struct field.*Url.*URL/
 }
 
-const fooId = "blah" // MATCH /fooId.*fooID/
-
 func f_it() { // MATCH /underscore.*func.*f_it/
 	more_underscore := 4 // MATCH /underscore.*var.*more_underscore/
 	_ = more_underscore
@@ -47,11 +45,6 @@ func f_it() { // MATCH /underscore.*func.*f_it/
 		_ = tApi
 	}
 
-	var c chan int
-	select {
-	case qId := <-c: // MATCH /var.*qId.*qID/
-		_ = qId
-	}
 }
 
 // Common styles in other languages that don't belong in Go.
