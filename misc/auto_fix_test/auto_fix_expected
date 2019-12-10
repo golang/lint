@@ -1,0 +1,8 @@
+package testtest
+
+const bar = ""
+
+func foo() {
+	const fooBar = ""
+	const isHTTP = false
+}

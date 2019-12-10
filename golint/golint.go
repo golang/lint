@@ -10,7 +10,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/ast"
 	"go/build"
+	"go/format"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -22,6 +25,7 @@ import (
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	shouldFix     = flag.Bool("fix", false, "fix automatically if it is possible (this may overwrite warned files)")
 	suggestions   int
 )
 
@@ -116,11 +120,34 @@ func lintFiles(filenames ...string) {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
+
+	filenameToReplacedFileAST := make(map[string]*ast.File)
+
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
-			fmt.Printf("%v: %s\n", p.Position, p.Text)
+			autoFixedMarker := ""
+			if *shouldFix {
+				if replacer := p.Fixer; replacer != nil {
+					if filename := p.Position.Filename; filename != "" {
+						filenameToReplacedFileAST[filename] = replacer()
+						autoFixedMarker = "[fixed] "
+					}
+				}
+			}
+			fmt.Printf("%v: %s%s\n", p.Position, autoFixedMarker, p.Text)
 			suggestions++
 		}
+	}
+
+	for filename, astFile := range filenameToReplacedFileAST {
+		func() {
+			file, err := os.Create(filename)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+				return
+			}
+			format.Node(file, token.NewFileSet(), astFile)
+		}()
 	}
 }
 
