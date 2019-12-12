@@ -25,7 +25,7 @@ import (
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
-	shouldFix     = flag.Bool("fix", false, "fix automatically if it is possible (this may overwrite warned files)")
+	isFixMode     = flag.Bool("fix", false, "fix automatically if it is possible (this may overwrite warned files)")
 	suggestions   int
 )
 
@@ -120,7 +120,7 @@ func lintFiles(filenames ...string) {
 	}
 
 	l := new(lint.Linter)
-	ps, err := l.LintFiles(files)
+	ps, err := l.LintFiles(files, *isFixMode)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
@@ -131,7 +131,7 @@ func lintFiles(filenames ...string) {
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			autoFixedMarker := ""
-			if *shouldFix {
+			if *isFixMode {
 				if fixer := p.Fixer; fixer != nil {
 					if filename := p.Position.Filename; filename != "" {
 						filenameToSrcAutoFix[filename] = &srcInfoForAutoFix{
@@ -142,6 +142,12 @@ func lintFiles(filenames ...string) {
 					}
 				}
 			}
+
+			if p.OnlyUsedToFix {
+				// don't show a warning message
+				continue
+			}
+
 			fmt.Printf("%v: %s%s\n", p.Position, autoFixedMarker, p.Text)
 			suggestions++
 		}

@@ -16,6 +16,8 @@ import (
 	"go/token"
 	"go/types"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
@@ -44,6 +46,12 @@ func TestAll(t *testing.T) {
 		if !rx.MatchString(fi.Name()) {
 			continue
 		}
+
+		fInfo, _ := os.Stat(path.Join(baseDir, fi.Name()))
+		if fInfo.IsDir() {
+			continue
+		}
+
 		//t.Logf("Testing %s", fi.Name())
 		src, err := ioutil.ReadFile(path.Join(baseDir, fi.Name()))
 		if err != nil {
@@ -313,5 +321,43 @@ func TestIsGenerated(t *testing.T) {
 		if got != test.generated {
 			t.Errorf("test %d, isGenerated() = %v, want %v", i, got, test.generated)
 		}
+	}
+}
+
+func TestAutoFixOption(t *testing.T) {
+	contents, err := ioutil.ReadFile("testdata/names.go")
+	if err != nil {
+		t.Fatalf("ioutil.ReadFile to copy file: %v", err)
+	}
+
+	err = ioutil.WriteFile("testdata/auto_fix/given.go", contents, 0644)
+	if err != nil {
+		t.Fatalf("ioutil.WriteFile to copy file: %v", err)
+	}
+
+	cmd := exec.Command("go", "run", "./golint", "--fix", "--", "./testdata/auto_fix/given.go")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		t.Fatalf("run golint command with fix option: %v", err)
+	}
+
+	given, err := ioutil.ReadFile("testdata/auto_fix/given.go")
+	if err != nil {
+		t.Fatalf("ioutil.ReadFile to read file: %v", err)
+	}
+	expected, err := ioutil.ReadFile("testdata/auto_fix/expected.go")
+	if err != nil {
+		t.Fatalf("ioutil.ReadFile to read file: %v", err)
+	}
+
+	if string(given) != string(expected) {
+		t.Errorf(`given code and expected code were different
+Given:
+%s
+Expected:
+%s
+`, given, expected)
 	}
 }

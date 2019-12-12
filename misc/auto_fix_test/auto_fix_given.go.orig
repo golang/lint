@@ -1,8 +1,0 @@
-package testTest
-
-const kBar = ""
-
-func foo() {
-	const foo_bar = ""
-	const isHttp = false
-}
