@@ -103,6 +103,11 @@ func exists(filename string) bool {
 	return err == nil
 }
 
+type srcInfoForAutoFix struct {
+	astFile *ast.File
+	fileSet *token.FileSet
+}
+
 func lintFiles(filenames ...string) {
 	files := make(map[string][]byte)
 	for _, filename := range filenames {
@@ -121,15 +126,18 @@ func lintFiles(filenames ...string) {
 		return
 	}
 
-	filenameToReplacedFileAST := make(map[string]*ast.File)
+	filenameToSrcAutoFix := make(map[string]*srcInfoForAutoFix)
 
 	for _, p := range ps {
 		if p.Confidence >= *minConfidence {
 			autoFixedMarker := ""
 			if *shouldFix {
-				if replacer := p.Fixer; replacer != nil {
+				if fixer := p.Fixer; fixer != nil {
 					if filename := p.Position.Filename; filename != "" {
-						filenameToReplacedFileAST[filename] = replacer()
+						filenameToSrcAutoFix[filename] = &srcInfoForAutoFix{
+							astFile: fixer(),
+							fileSet: p.FileSet,
+						}
 						autoFixedMarker = "[fixed] "
 					}
 				}
@@ -139,14 +147,18 @@ func lintFiles(filenames ...string) {
 		}
 	}
 
-	for filename, astFile := range filenameToReplacedFileAST {
+	for filename, src := range filenameToSrcAutoFix {
 		func() {
 			file, err := os.Create(filename)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
+				fmt.Fprintf(os.Stderr, "failed to create a file for auto-fix; %v\n", err)
 				return
 			}
-			format.Node(file, token.NewFileSet(), astFile)
+			err = format.Node(file, src.fileSet, src.astFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to generate code for auto-fix; %v\n", err)
+				return
+			}
 		}()
 	}
 }

@@ -49,6 +49,9 @@ type Problem struct {
 	// Fixer fixes a warning automatically if it is possible and returns fixed file's AST.
 	// If this field is nil, it does nothing.
 	Fixer func() *ast.File
+
+	// FileSet is used to generate source code for fix mode.
+	FileSet *token.FileSet
 }
 
 func (p *Problem) String() string {
@@ -235,6 +238,7 @@ func (p *pkg) errorfAt(pos token.Position, confidence float64, fixer func() *ast
 		Position:   pos,
 		Confidence: confidence,
 		Fixer:      fixer,
+		FileSet:    p.fset,
 	}
 	if pos.Filename != "" {
 		// The file might not exist in our mapping if a //line directive was encountered.
