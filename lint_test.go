@@ -335,7 +335,24 @@ func TestAutoFixOption(t *testing.T) {
 		t.Fatalf("ioutil.WriteFile to copy file: %v", err)
 	}
 
-	cmd := exec.Command("go", "run", "./golint", "--fix", "--", "./testdata/auto_fix/given.go")
+	// workaround for go 1.10 or older.
+	// The older version doesn't support to execute `go run` with directory argument, so it needs to expand the files of the directory to the argument manually.
+	// ideal:
+	//   go run -- ./golint --fix ./testdata/auto_fix/given.go
+	// workaround:
+	//   go run -- ./golint/golint.go ./golint/import.go ./golint/importcomment.go --fix ./testdata/auto_fix/given.go
+	runCmdArgs := []string{"run", "--"}
+	cmdDir := "./golint/"
+	golintCmdFiles, err := ioutil.ReadDir(cmdDir)
+	if err != nil {
+		t.Fatalf("ioutil.ReadDir: %v", err)
+	}
+	for _, file := range golintCmdFiles {
+		runCmdArgs = append(runCmdArgs, cmdDir+file.Name())
+	}
+	runCmdArgs = append(runCmdArgs, "--fix", "./testdata/auto_fix/given.go")
+
+	cmd := exec.Command("go", runCmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
