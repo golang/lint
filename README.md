@@ -1,4 +1,6 @@
-Golint is a linter for Go source code.
+Golint is a linter for Go source code 
+
+(test modification).
 
 [![Build Status](https://travis-ci.org/golang/lint.svg?branch=master)](https://travis-ci.org/golang/lint)
 
