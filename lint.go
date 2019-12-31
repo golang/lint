@@ -834,13 +834,13 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 }
 
 var commonMethods = map[string]bool{
+	"Close":     true,
 	"Error":     true,
+	"Flush":     true,
 	"Read":      true,
-	"Write":     true,
 	"ServeHTTP": true,
 	"String":    true,
-	"Flush":     true,
-	"Close":     true,
+	"Write":     true,
 }
 
 // lintFuncDoc examines doc comments on functions and methods.
