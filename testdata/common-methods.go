@@ -14,3 +14,4 @@ func (T) String() string                                   { return "" }
 func (T) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 func (T) Read(p []byte) (n int, err error)                 { return 0, nil }
 func (T) Write(p []byte) (n int, err error)                { return 0, nil }
+func (T) Unwrap(err error) error                           { return nil }
