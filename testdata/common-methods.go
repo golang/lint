@@ -9,9 +9,9 @@ import "net/http"
 // T is ...
 type T int
 
-func (T) Close()                                           {}
+func (T) Close() error                                     { return nil }
 func (T) Error() string                                    { return "" }
-func (T) Flush()                                           {}
+func (T) Flush() error                                     { return nil }
 func (T) String() string                                   { return "" }
 func (T) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 func (T) Read(p []byte) (n int, err error)                 { return 0, nil }
