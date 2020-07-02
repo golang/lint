@@ -792,6 +792,7 @@ var commonInitialisms = map[string]bool{
 	"SQL":   true,
 	"SSH":   true,
 	"TCP":   true,
+	"TLD":   true,
 	"TLS":   true,
 	"TTL":   true,
 	"UDP":   true,
