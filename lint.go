@@ -551,6 +551,30 @@ func isInTopLevel(f *ast.File, ident *ast.Ident) bool {
 	return true
 }
 
+var invalidPackageNames = []string{
+	"util",
+	"utils",
+	"common",
+	"commons",
+	"helper",
+	"helpers",
+	"base",
+	"misc",
+	"api",
+	"types",
+	"interfaces",
+}
+
+func isInvalidPackageName(name string) bool {
+	name = strings.ToLower(name)
+	for _, invalidPackageName := range invalidPackageNames {
+		if name == invalidPackageName {
+			return true
+		}
+	}
+	return false
+}
+
 // lintNames examines all names in the file.
 // It complains if any use underscores or incorrect known initialisms.
 func (f *file) lintNames() {
@@ -560,6 +584,9 @@ func (f *file) lintNames() {
 	}
 	if anyCapsRE.MatchString(f.f.Name.Name) {
 		f.errorf(f.f, 1, link("http://golang.org/doc/effective_go.html#package-names"), category("mixed-caps"), "don't use MixedCaps in package name; %s should be %s", f.f.Name.Name, strings.ToLower(f.f.Name.Name))
+	}
+	if isInvalidPackageName(f.f.Name.Name) {
+		f.errorf(f.f, 1, link(styleGuideBase+"#package-names"), "avoid using package name: %s", f.f.Name.Name)
 	}
 
 	check := func(id *ast.Ident, thing string) {
