@@ -14,6 +14,11 @@ script:
   - go test -v -race ./...
 
 matrix:
+  include:
+    - arch: ppc64le
+      go: 1.14.x
+    - arch: ppc64le
+      go: master
   allow_failures:
     - go: master
   fast_finish: true
