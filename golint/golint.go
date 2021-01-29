@@ -22,6 +22,7 @@ import (
 var (
 	minConfidence = flag.Float64("min_confidence", 0.8, "minimum confidence of a problem to print it")
 	setExitStatus = flag.Bool("set_exit_status", false, "set exit status to 1 if any issues are found")
+	tags          = flag.String("tags", "", "comma-separated list of build tags to apply when parsing")
 	suggestions   int
 )
 
@@ -39,8 +40,12 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	context := build.Default
+	tagList := strings.Split(*tags, ",")
+	context.BuildTags = append(tagList, context.BuildTags...)
+
 	if flag.NArg() == 0 {
-		lintDir(".")
+		lintDir(".", context)
 	} else {
 		// dirsRun, filesRun, and pkgsRun indicate whether golint is applied to
 		// directory, file or package targets. The distinction affects which
@@ -72,13 +77,13 @@ func main() {
 		switch {
 		case dirsRun == 1:
 			for _, dir := range args {
-				lintDir(dir)
+				lintDir(dir, context)
 			}
 		case filesRun == 1:
 			lintFiles(args...)
 		case pkgsRun == 1:
 			for _, pkg := range importPaths(args) {
-				lintPackage(pkg)
+				lintPackage(pkg, context)
 			}
 		}
 	}
@@ -124,13 +129,13 @@ func lintFiles(filenames ...string) {
 	}
 }
 
-func lintDir(dirname string) {
-	pkg, err := build.ImportDir(dirname, 0)
+func lintDir(dirname string, context build.Context) {
+	pkg, err := context.ImportDir(dirname, 0)
 	lintImportedPackage(pkg, err)
 }
 
-func lintPackage(pkgname string) {
-	pkg, err := build.Import(pkgname, ".", 0)
+func lintPackage(pkgname string, context build.Context) {
+	pkg, err := context.Import(pkgname, ".", 0)
 	lintImportedPackage(pkg, err)
 }
 
