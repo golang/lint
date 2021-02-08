@@ -1,13 +1,13 @@
-// Test of stuttery names.
+// Test of repetetive names.
 
 // Package donut ...
 package donut
 
 // DonutMaker makes donuts.
-type DonutMaker struct{} // MATCH /donut\.DonutMaker.*stutter/
+type DonutMaker struct{} // MATCH /donut\.DonutMaker.*repetitive/
 
 // DonutRank computes the ranking of a donut.
-func DonutRank(d Donut) int { // MATCH /donut\.DonutRank.*stutter/
+func DonutRank(d Donut) int { // MATCH /donut\.DonutRank.*repetitive/
 	return 0
 }
 

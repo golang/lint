@@ -472,14 +472,12 @@ func (f *file) lintImports() {
 
 const docCommentsLink = styleGuideBase + "#doc-comments"
 
-// lintExported examines the exported names.
-// It complains if any required doc comments are missing,
-// or if they are not of the right form. The exact rules are in
-// lintFuncDoc, lintTypeDoc and lintValueSpecDoc; this function
-// also tracks the GenDecl structure being traversed to permit
-// doc comments for constants to be on top of the const block.
-// It also complains if the names stutter when combined with
-// the package name.
+// lintExported examines the exported names. It complains if any required doc
+// comments are missing, or if they are not of the right form. The exact rules
+// are in lintFuncDoc, lintTypeDoc and lintValueSpecDoc; this function also
+// tracks the GenDecl structure being traversed to permit doc comments for
+// constants to be on top of the const block. It also complains if the names
+// are repetitive when combined with the package name.
 func (f *file) lintExported() {
 	if f.isTest() {
 		return
@@ -502,9 +500,9 @@ func (f *file) lintExported() {
 		case *ast.FuncDecl:
 			f.lintFuncDoc(v)
 			if v.Recv == nil {
-				// Only check for stutter on functions, not methods.
+				// Only check for repetitives on functions, not methods.
 				// Method names are not used package-qualified.
-				f.checkStutter(v.Name, "func")
+				f.checkRepetition(v.Name, "func")
 			}
 			// Don't proceed inside funcs.
 			return false
@@ -515,7 +513,7 @@ func (f *file) lintExported() {
 				doc = lastGen.Doc
 			}
 			f.lintTypeDoc(v, doc)
-			f.checkStutter(v.Name, "type")
+			f.checkRepetition(v.Name, "type")
 			// Don't proceed inside types.
 			return false
 		case *ast.ValueSpec:
@@ -935,16 +933,16 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	}
 }
 
-func (f *file) checkStutter(id *ast.Ident, thing string) {
+func (f *file) checkRepetition(id *ast.Ident, thing string) {
 	pkg, name := f.f.Name.Name, id.Name
 	if !ast.IsExported(name) {
 		// unexported name
 		return
 	}
-	// A name stutters if the package name is a strict prefix
+	// A name is repetitive if the package name is a strict prefix
 	// and the next character of the name starts a new word.
 	if len(name) <= len(pkg) {
-		// name is too short to stutter.
+		// name is too short to be repetitive.
 		// This permits the name to be the same as the package name.
 		return
 	}
@@ -953,10 +951,10 @@ func (f *file) checkStutter(id *ast.Ident, thing string) {
 	}
 	// We can assume the name is well-formed UTF-8.
 	// If the next rune after the package name is uppercase or an underscore
-	// the it's starting a new word and thus this name stutters.
+	// the it's starting a new word and thus this name is repetitive.
 	rem := name[len(pkg):]
 	if next, _ := utf8.DecodeRuneInString(rem); next == '_' || unicode.IsUpper(next) {
-		f.errorf(id, 0.8, link(styleGuideBase+"#package-names"), category("naming"), "%s name will be used as %s.%s by other packages, and that stutters; consider calling this %s", thing, pkg, name, rem)
+		f.errorf(id, 0.8, link(styleGuideBase+"#package-names"), category("naming"), "%s name will be used as %s.%s by other packages. This is repetitive; consider calling this %s", thing, pkg, name, rem)
 	}
 }
 
