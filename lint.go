@@ -773,6 +773,7 @@ var commonInitialisms = map[string]bool{
 	"ASCII": true,
 	"CPU":   true,
 	"CSS":   true,
+	"DB":    true,
 	"DNS":   true,
 	"EOF":   true,
 	"GUID":  true,
