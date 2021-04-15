@@ -666,7 +666,7 @@ func (f *file) lintNames() {
 			}
 		case *ast.InterfaceType:
 			// Do not check interface method names.
-			// They are often constrainted by the method names of concrete types.
+			// They are often constrained by the method names of concrete types.
 			for _, x := range v.Methods.List {
 				ft, ok := x.Type.(*ast.FuncType)
 				if !ok { // might be an embedded interface name
