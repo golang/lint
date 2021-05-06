@@ -829,7 +829,7 @@ func (f *file) lintTypeDoc(t *ast.TypeSpec, doc *ast.CommentGroup) {
 		}
 	}
 	if !strings.HasPrefix(s, t.Name.Name+" ") {
-		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should be of the form "%v ..." (with optional leading article)`, t.Name, t.Name)
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported type %v should be of the form "// %v ..." (with optional leading article)`, t.Name, t.Name)
 	}
 }
 
@@ -878,7 +878,7 @@ func (f *file) lintFuncDoc(fn *ast.FuncDecl) {
 	s := fn.Doc.Text()
 	prefix := fn.Name.Name + " "
 	if !strings.HasPrefix(s, prefix) {
-		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		f.errorf(fn.Doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "// %s..."`, kind, name, prefix)
 	}
 }
 
@@ -931,7 +931,7 @@ func (f *file) lintValueSpecDoc(vs *ast.ValueSpec, gd *ast.GenDecl, genDeclMissi
 	}
 	prefix := name + " "
 	if !strings.HasPrefix(doc.Text(), prefix) {
-		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "%s..."`, kind, name, prefix)
+		f.errorf(doc, 1, link(docCommentsLink), category("comments"), `comment on exported %s %s should be of the form "// %s..."`, kind, name, prefix)
 	}
 }
 
